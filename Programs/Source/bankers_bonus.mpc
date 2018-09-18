@@ -33,7 +33,9 @@ def accept_client_input():
     acceptclientconnection(client_socket_id, PORTNUM)
     
     client_inputs = sint.receive_from_client(3, client_socket_id)
-
+    print_ln('%s', client_inputs[0].reveal())
+    print_ln('%s', client_inputs[1].reveal())
+    print_ln('%s', client_inputs[2].reveal())
     return client_socket_id, client_inputs[0], client_inputs[1], client_inputs[2]
 
 

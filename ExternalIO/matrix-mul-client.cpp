@@ -44,6 +44,12 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <cstdlib>
+
+
+
+const int NUM_ROWS = 10;
+const int NUM_COLUMNS = 10;
 
 // Send the private inputs masked with a random value.
 // Receive shares of a preprocessed triple from each SPDZ engine, combine and check the triples are valid.
@@ -80,8 +86,9 @@ void send_private_inputs(vector<gfp>& values, vector<int>& sockets, int nparties
             exit(1);
         }
     }
-    // Send inputs + triple[0], so SPDZ can compute shares of each value
+
     os.reset_write_head();
+    // Send inputs + triple[0], so SPDZ can compute shares of each value
     for (int i = 0; i < num_inputs; i++)
     {
         gfp y = values[i] + triples[i][0];
@@ -113,9 +120,24 @@ void initialise_fields(const string& dir_prefix)
 }
 
 
-// Receive shares of the result and sum together.
-// Also receive authenticating values.
-gfp receive_result(vector<int>& sockets, int nparties)
+// Generates matrix with a finish
+vector<gfp> generateMatrix(int finish) {
+    cout << "Generating Matrix" << endl;
+    vector<gfp> matrix(1 + NUM_ROWS * NUM_COLUMNS);
+    gfp finish_2 = finish;
+    matrix[0] = finish_2;
+    for (int i = 1; i < NUM_ROWS * NUM_COLUMNS + 1; i++) {
+        gfp val = rand();
+        matrix[i] = val;
+    }
+    for(unsigned int i=0; i<matrix.size(); ++i)
+        cout << matrix[i] << ',';
+
+    return matrix;
+}
+
+
+gfp receive_one_result(vector<int>& sockets, int nparties)
 {
     vector<gfp> output_values(3);
     octetStream os;
@@ -140,60 +162,64 @@ gfp receive_result(vector<int>& sockets, int nparties)
 }
 
 
+vector<gfp> receive_result(vector<int>& sockets, int nparties)
+{
+    cout << "Receiving matrix" << endl;
+    vector<gfp> output_values(NUM_ROWS * NUM_COLUMNS);    
+    octetStream os;
+    for (int i = 0; i < NUM_ROWS * NUM_COLUMNS; i++)
+    {
+        output_values[i] = receive_one_result(sockets, nparties);
+    }
+
+    return output_values;
+}
+
+
+
+
+
 int main(int argc, char** argv)
 {
-    int my_client_id;
-    int nparties;
-    int salary_value;
-    int finish;
+    srand(time(NULL));
     int port_base = 14000;
+    int nparties = 2;
+    int finish;
     string host_name = "localhost";
 
-    if (argc < 5) {
-        cout << "Usage is bankers-bonus-client <client identifier> <number of spdz parties> "
-           << "<salary to compare> <finish (0 false, 1 true)> <optional host name, default localhost> "
-           << "<optional spdz party port base number, default 14000>" << endl;
+    if (argc < 1) {
+        cout << "Please provide client id" << endl;
         exit(0);
     }
 
-    my_client_id = atoi(argv[1]);
-    nparties = atoi(argv[2]);
-    salary_value = atoi(argv[3]);
-    finish = atoi(argv[4]);
-    if (argc > 5)
-        host_name = argv[5];
-    if (argc > 6)
-        port_base = atoi(argv[6]);
+
+    finish = atoi(argv[0]);
+    //nparties = atoi(argv[1]);
 
     // init static gfp
     string prep_data_prefix = get_prep_dir(nparties, 128, 40);
     initialise_fields(prep_data_prefix);
 
-    // Setup connections from this client to each party socket
+
     vector<int> sockets(nparties);
     for (int i = 0; i < nparties; i++)
     {
         set_up_client_socket(sockets[i], host_name.c_str(), port_base + i);
     }
     cout << "Finish setup socket connections to SPDZ engines." << endl;
-
-    // Map inputs into gfp 
-    vector<gfp> input_values_gfp(3);
-    input_values_gfp[0].assign(my_client_id);
-    input_values_gfp[1].assign(salary_value);
-    input_values_gfp[2].assign(finish);    
+    vector<gfp> matrix = generateMatrix(finish);
 
     // Run the commputation
-    send_private_inputs(input_values_gfp, sockets, nparties);
+    send_private_inputs(matrix, sockets, nparties);
     cout << "Sent private inputs to each SPDZ engine, waiting for result..." << endl;
 
     // Get the result back (client_id of winning client)
-    gfp result = receive_result(sockets, nparties);
-
-    cout << "Winning client id is : " << result << endl;
-    
-    for (unsigned int i = 0; i < sockets.size(); i++)
+    vector<gfp> result = receive_result(sockets, nparties);
+    for (int i = 0; i < NUM_ROWS * NUM_COLUMNS; i++) {
+        cout << result[i] << " , ";
+    }
+    for (int i = 0; i < nparties; i++) {
         close_client_socket(sockets[i]);
-
+    }
     return 0;
 }

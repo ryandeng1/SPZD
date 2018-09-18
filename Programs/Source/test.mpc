@@ -1,0 +1,45 @@
+num_rows = 2
+num_cols = 3
+client_arr = [1, 2, 3, 4, 5, 6]
+client_arr_2 = [7, 8, 9]
+
+matrix = sint.Matrix(num_rows, num_cols)
+for i in range(num_rows):
+    for j in range(num_cols):
+        matrix[i][j] = client_arr[i * num_cols + j]
+
+
+num_rows_2 = 3
+num_cols_2 = 1
+matrix_2 = sint.Matrix(num_rows_2, num_cols_2)
+for k in range(num_rows_2):
+    for l in range(num_cols_2):
+        index = k * num_cols_2 + l
+        matrix_2[k][l] = client_arr_2[index]
+
+result_matrix = sint.Matrix(num_rows, num_cols_2)
+
+
+
+
+
+
+@for_range(len(matrix))
+def range_body(i):
+    @for_range(len(matrix_2[0]))
+    def range_body(j):
+        @for_range(len(matrix[0]))
+        def range_body(k):
+            result_matrix[i][j] += matrix[i][k] * matrix_2[k][j]
+
+
+
+
+
+
+@for_range(num_rows)
+def range_body(i):
+    @for_range(num_cols_2)
+    def range_body(j):
+        print_ln('%s', result_matrix[i][j].reveal())
+
