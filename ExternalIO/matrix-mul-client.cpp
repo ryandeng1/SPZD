@@ -42,6 +42,7 @@
 
 #include <sodium.h>
 #include <iostream>
+#include <cstdio>
 #include <sstream>
 #include <fstream>
 #include <cstdlib>
@@ -182,6 +183,8 @@ vector<gfp> receive_result(vector<int>& sockets, int nparties)
 int main(int argc, char** argv)
 {
     srand(time(NULL));
+    clock_t start;
+    double duration;
     int port_base = 14000;
     int nparties = 2;
     int finish;
@@ -209,12 +212,17 @@ int main(int argc, char** argv)
     cout << "Finish setup socket connections to SPDZ engines." << endl;
     vector<gfp> matrix = generateMatrix(finish);
 
+
+    start = clock();
     // Run the commputation
     send_private_inputs(matrix, sockets, nparties);
     cout << "Sent private inputs to each SPDZ engine, waiting for result..." << endl;
 
     // Get the result back (client_id of winning client)
     vector<gfp> result = receive_result(sockets, nparties);
+
+    duration = (clock() - start ) / (double) CLOCKS_PER_SEC;
+    printf(" Took %f seconds for matrix multiplication", duration);
     for (int i = 0; i < NUM_ROWS * NUM_COLUMNS; i++) {
         cout << result[i] << " , ";
     }
