@@ -1,0 +1,136 @@
+# (C) 2018 University of Bristol. See License.txt
+
+NUM_ROWS = 10
+NUM_COLS = 10
+
+
+
+# Local computation of weight vector.
+def admm_local(XXinv, Xy, u, z, rho, l):
+	z_u = Array(len(u), sint)
+	@for_range(len(u))
+	def loop_body(i):
+		z_u[i] = rho * (z[i] - u[i])
+
+	second_term = add_matrices(Xy, z_u)
+	w = multiply_matrices(XXinv, second_term)
+	return w
+
+def soft_threshold(th, v):
+	if_then(v > th)
+	return v - th
+	if_then(v < -1*th)
+	return v + th
+	else_then()
+	return 0
+	end_if()
+
+def soft_threshold_vec(th, vec):
+
+    dim_x = NUM_ROWS
+    dim_y = NUM_COLS
+    vec_new = Array(NUM_ROWS * NUM_COLS, sfloat)
+    @for_range(NUM_ROWS * NUM_COLS)
+    def loop_body(i):
+    	vec_new[i] = soft_threshold(th, vec[i])
+    
+    return vec_new
+
+def admm_coordinate(w_list, u_list, z, rho, l):
+    d = NUM_COLS
+
+    w_avg = Array(NUM_COLS, sfloat)
+    u_sum = Array(NUM_COLS, sfloat)
+    @for_range(d)
+    def loop_body(i):
+    	w_avg[i] = 0
+    	u_avg[i] = 0
+
+    # Assume u_list and w_list are same length.
+    
+    @for_range(len(w_list))
+    def loop_body(i):
+    	w_avg = add_matrices(w_avg, w_list[i])
+    	u_avg = add_matrices(u_avg, u_list[i])
+
+	@for_range(len(w_list))
+	def loop_body(i):
+		w_avg[i] = w_avg[i] / len(w_list)
+		u_avg[i] = u_avg[i] / len(u_list)
+	   	
+
+    nparties = len(w_list)
+    th = l / (rho * nparties)
+    
+    z_new = soft_threshold_vec(th, add_matrices(w_avg, u_avg))
+    
+    u_list_new = Array(len(u_list), sfloat)
+    @for_range(len(u_list))
+    def loop_body(i):
+    	u_list_new[i] = (u_list[i] + w_list[i] - z_new)
+
+    return (u_list_new, z_new)
+
+def add_matrices(left_matrix, right_matrix):
+	result_matrix = Array(NUM_ROWS * NUM_COLS, sfloat)
+	@for_range(NUM_ROWS * NUM_COLS)
+	def range_body(i):
+		result_matrix[i] = 0
+	@for_range(NUM_ROWS)
+	def range_body(i):
+		@for_range(NUM_COLS)
+		def range_body(j):
+			result_matrix[i * NUM_COLS + j] = left_matrix[i * NUM_COLS + j] + right_matrix[i * NUM_COLS + j]
+	return result_matrix
+
+
+def multiply_matrices(left_matrix, right_matrix):
+  result_matrix = Array(NUM_ROWS * NUM_COLS, sfloat)
+  @for_range(NUM_ROWS * NUM_COLS)
+  def range_body(i):
+    result_matrix[i] = 0
+  @for_range(NUM_ROWS)
+  def range_body(i):
+    @for_range(NUM_COLS)
+    def range_body(j):
+      @for_range(NUM_COLS)
+      def range_body(k):
+        result_matrix[i * NUM_COLS + j] += left_matrix[i * NUM_COLS + k].reveal() * right_matrix[k * NUM_COLS + j].reveal()
+  return result_matrix
+  
+
+
+def write_matrix_to_clients(sockets, number_clients, matrix):
+  rnd_from_triple = sint.get_random_triple()[0]
+  @for_range(number_clients)
+  def loop_body(i):
+    @for_range(NUM_ROWS * NUM_COLS)
+    def loop_body(j):
+      auth_result = matrix[j] * rnd_from_triple
+      sint.write_shares_to_socket(sockets[i], [matrix[j], rnd_from_triple, auth_result])
+
+
+
+
+def send_data_to_clients(number_clients, client_mapping, XXinv_cache, Xy_cache, u_list, z, rho, l):
+	# Send data to clients for them to compute admm locally.
+	@for_range(number_clients)
+	def loop_body(i):
+		key = client_mapping.keys()[i]
+		index = client_mapping[key]
+		sint.write_shares_to_socket(key, [XXinv[index], Xy[index], u_list[index], z, rho, l])
+
+
+
+
+def get_client_input():
+	client_socket_id = regint()
+	acceptclientconnection(client_socket_id, PORTNUM)
+	print_ln("Received Client Input!")
+	client_inputs = sint.receive_from_client(1 + DIMENSION_WEIGHT, client_socket_id)
+	finish = client_inputs[0].reveal()
+	weight_vector = Array(DIMENSION_WEIGHT, sint)
+	for i in range(1, NUM_ROWS * NUM_COLS + 1):
+		weight_vector[i - 1] = client_inputs[i]
+
+	return client_socket_id, weight_vector, finish
