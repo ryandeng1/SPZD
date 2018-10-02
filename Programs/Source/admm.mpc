@@ -71,6 +71,31 @@ def admm_coordinate(w_list, u_list, z, rho, l):
 
     return (u_list_new, z_new)
 
+
+def admm(XXinv_cache, Xy_cache, admm_iter, rho, l):
+	nparties = ken(XXinv_cache)
+
+	# Init all the lists, set everything to 0
+	w_list = Array(admm_iter, sfloat)
+	u_list = Array(admm_iter, sfloat)
+	z = Array(admm_iter, sfloat)
+	@for_range(len(w_list))
+	def loop_body(i):
+		w_list[i] = 0
+		u_list[i] = 0
+		z_list[i] = 0
+
+	@for_range(admm_iter)
+	def loop_body(i):
+		for_range(nparties):
+		def loop_body(j):
+			w_new = admm_local(XXinv_cache[i], Xy_cache[i], u_list[i], z, rho, l)
+			w_list[i] = w_new 
+		u_list, z = admm_coordinate(w_list, u_list, z, rho, l)
+
+	return w_list
+
+
 def add_matrices(left_matrix, right_matrix):
 	result_matrix = Array(NUM_ROWS * NUM_COLS, sfloat)
 	@for_range(NUM_ROWS * NUM_COLS)
