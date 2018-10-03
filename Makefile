@@ -51,7 +51,7 @@ offline: $(OT_EXE) Check-Offline.x
 
 gen_input: gen_input_f2n.x gen_input_fp.x
 
-externalIO: client-setup.x bankers-bonus-client.x bankers-bonus-commsec-client.x matrix-mul-client.x
+externalIO: client-setup.x bankers-bonus-client.x bankers-bonus-commsec-client.x matrix-mul-client.x admm-client.x
 
 she-offline: Check-Offline.x spdz2-offline.x
 
@@ -103,6 +103,11 @@ bankers-bonus-commsec-client.x: ExternalIO/bankers-bonus-commsec-client.cpp $(CO
 
 matrix-mul-client.x: ExternalIO/matrix-mul-client.cpp $(COMMON) $(PROCESSOR)
 	$(CXX) $(CFLAGS) -o $@ $^ $(LDLIBS)
+
+admm-client.x: ExternalIO/admm-client.cpp $(COMMON) $(PROCESSOR)
+	$(CXX) $(CFLAGS) -o $@ $^ $(LDLIBS)
+
+
 
 ifeq ($(USE_NTL),1)
 simple-offline.x: $(COMMON) $(FHEOFFLINE) simple-offline.cpp
