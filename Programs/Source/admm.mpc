@@ -1,14 +1,24 @@
 # (C) 2018 University of Bristol. See License.txt
 
 NUM_ROWS = 10
+
+from Compiler.types import sint, regint, Array, MemValue
+from Compiler.instructions import listen, acceptclientconnection
+from Compiler.library import print_ln, do_while, for_range
+from Compiler.util import if_else
+
 NUM_COLS = 10
 DIMENSION_WEIGHT = 10
+DECIMAL_PRECISION = 20
+
+# Shift 20 places to get from float representation to int representation
+FP_FACTOR = 6
 
 
 # Local computation of weight vector.
 def admm_local(XXinv, Xy, u, z, rho, l):
-	z_u = Array(len(u), sint)
-	@for_range(len(u))
+	z_u = sfixArray(len(z))
+	@for_range(len(z))
 	def loop_body(i):
 		z_u[i] = rho * (z[i] - u[i])
 
@@ -17,6 +27,13 @@ def admm_local(XXinv, Xy, u, z, rho, l):
 	return w
 
 def soft_threshold(th, v):
+	if v > th:
+		return v - th
+	if v < -1 * th:
+		return v + th
+
+	return 0 
+	"""
 	if_then(v > th)
 	return v - th
 	if_then(v < -1*th)
@@ -24,34 +41,42 @@ def soft_threshold(th, v):
 	else_then()
 	return 0
 	end_if()
+	"""
 
 def soft_threshold_vec(th, vec):
-
-    dim_x = NUM_ROWS
-    dim_y = NUM_COLS
-    vec_new = Array(NUM_ROWS * NUM_COLS, sint)
-    @for_range(NUM_ROWS * NUM_COLS)
+    vec_new = sfixArray(len(vec))
+    @for_range(len(vec))
     def loop_body(i):
-    	vec_new[i] = soft_threshold(th, vec[i])
+    	mem_th = MemFix(sfix(0))
+    	vec_th = MemFix(sfix(0))
+    	mem_th.write(sfix(th))
+    	vec_th.write(sfix(vec[i]))
+    	print(type(mem_th.read()))
+    	vec_new[i] = soft_threshold(mem_th.read(), vec_th.read())
     
     return vec_new
 
 def admm_coordinate(w_list, u_list, z, rho, l):
     d = NUM_COLS
-
-    w_avg = Array(NUM_COLS, sint)
-    u_sum = Array(NUM_COLS, sint)
+    nparties = MAX_NUM_CLIENTS
+    w_avg = sfixArray(NUM_COLS)
+    u_avg = sfixArray(NUM_COLS)
     @for_range(d)
     def loop_body(i):
-    	w_avg[i] = 0
-    	u_avg[i] = 0
+    	w_avg[i] = sfix(0)
+    	u_avg[i] = sfix(0)
 
     # Assume u_list and w_list are same length.
     
-    @for_range(len(w_list))
+    @for_range(nparties)
     def loop_body(i):
-    	w_avg = add_matrices(w_avg, w_list[i])
-    	u_avg = add_matrices(u_avg, u_list[i])
+    	w = get_ith_matrix(w_list, i, NUM_COLS)
+    	u = get_ith_matrix(u_list, i, NUM_COLS)
+    	new_w_avg = add_matrices(w_avg, w)
+    	new_u_avg = add_matrices(u_avg, u)
+    	copy_ith_matrix(w_avg, new_w_avg, 0, NUM_COLS)
+    	copy_ith_matrix(u_avg, new_u_avg, 0, NUM_COLS)
+
 
 	@for_range(len(w_list))
 	def loop_body(i):
@@ -59,48 +84,91 @@ def admm_coordinate(w_list, u_list, z, rho, l):
 		u_avg[i] = u_avg[i] / len(u_list)
 	   	
 
-    nparties = len(w_list)
-    th = l / (rho * nparties)
+    # threshold
+    th = sfix(l / (rho * nparties))
     
     z_new = soft_threshold_vec(th, add_matrices(w_avg, u_avg))
     
-    u_list_new = Array(len(u_list), sint)
-    @for_range(len(u_list))
+    u_list_new = sfixArray(len(u_list))
+    @for_range(nparties)
     def loop_body(i):
-    	u_list_new[i] = (u_list[i] + w_list[i] - z_new)
+    	u_i = get_ith_matrix(u_list, i, NUM_COLS)
+    	w_i = get_ith_matrix(w_list, i, NUM_COLS)
+    	@for_range(len(z_new))
+    	def loop_body(j):
+    		z_new[j] = - 1 * z_new[j]
+
+    	intermediate_vec = add_matrices(u_i, w_i)
+    	sum_vec = add_matrices(intermediate_vec, z_new)
+    	copy_ith_matrix(u_list, sum_vec, i, NUM_COLS)
+    	#u_list_new[i] = (u_list[i] + w_list[i] - z_new)
 
     return (u_list_new, z_new)
 
 
-def admm(XXinv_cache, Xy_cache, admm_iter, rho, l):
-	nparties = ken(XXinv_cache)
 
+def get_new_w(XXinv_cache, Xy_cache, u_list, z, rho, l):
+	nparties = MAX_NUM_CLIENTS
+	w_list = sfixArray(nparties)
+	@for_range(nparties)
+	def loop_body(i):
+		XXinv = get_ith_matrix(XXinv_cache, i, NUM_ROWS*NUM_COLS)
+		Xy = get_ith_matrix(Xy_cache, i, NUM_COLS)
+		u = get_ith_matrix(u_list, i, NUM_COLS)
+		w_new = admm_local(XXinv, Xy, u, z, rho, l)
+		copy_ith_matrix(w_list, w_new, i, NUM_COLS)
+	return w_list
+
+def admm(XXinv_cache, Xy_cache, admm_iter, rho, l):
+	nparties = MAX_NUM_CLIENTS
 	# Init all the lists, set everything to 0
-	w_list = Array(admm_iter, sint)
-	u_list = Array(admm_iter, sint)
-	z = Array(admm_iter, sint)
+	w_list = sfixArray(nparties * NUM_COLS)
+	u_list = sfixArray(nparties * NUM_COLS)
+	z = sfixArray(NUM_COLS)
 	@for_range(len(w_list))
 	def loop_body(i):
-		w_list[i] = 0
-		u_list[i] = 0
-		z_list[i] = 0
+		w_list[i] = sfix(0)
+		u_list[i] = sfix(0)
+	@for_range(len(z))
+	def loop_body(i):
+		z[i] = sfix(0)
 
 	@for_range(admm_iter)
 	def loop_body(i):
-		@for_range(nparties)
+		XXinv = get_ith_matrix(XXinv_cache, i, NUM_ROWS * NUM_COLS)
+		Xy = get_ith_matrix(Xy_cache, i, NUM_COLS)
+		u = get_ith_matrix(u_list, i, NUM_COLS)
+		new_w_list = get_new_w(XXinv_cache, Xy_cache, u, z, rho, l)	
+		new_u_list, new_z = admm_coordinate(new_w_list, u_list, z, rho, l)
+		@for_range(len(u_list))
 		def loop_body(j):
-			w_new = admm_local(XXinv_cache[i], Xy_cache[i], u_list[i], z, rho, l)
-			w_list[i] = w_new 
-		u_list, z = admm_coordinate(w_list, u_list, z, rho, l)
+			w_list[j] = new_w_list[j]
+			u_list[j] = new_u_list[j]
+		@for_range(len(new_z))
+		def loop_body(i):
+			z[i] = new_z[i]
 
 	return w_list
 
 
+def get_ith_matrix(lst, index, step_size):
+	result = sfixArray(NUM_ROWS * NUM_COLS)
+	@for_range(NUM_ROWS * NUM_COLS)
+	def loop_body(i):
+		result[i] = lst[index * step_size + i]
+	return result
+
+def copy_ith_matrix(lst, lst_to_copy, index, step_size):
+	@for_range(len(lst_to_copy))
+	def loop_body(i):
+		lst[index * step_size + i] = lst_to_copy[i]
+
+
 def add_matrices(left_matrix, right_matrix):
-	result_matrix = Array(NUM_ROWS * NUM_COLS, sint)
+	result_matrix = sfixArray(NUM_ROWS * NUM_COLS)
 	@for_range(NUM_ROWS * NUM_COLS)
 	def range_body(i):
-		result_matrix[i] = 0
+		result_matrix[i] = sfix(0)
 	@for_range(NUM_ROWS)
 	def range_body(i):
 		@for_range(NUM_COLS)
@@ -110,10 +178,10 @@ def add_matrices(left_matrix, right_matrix):
 
 
 def multiply_matrices(left_matrix, right_matrix):
-  result_matrix = Array(NUM_ROWS * NUM_COLS, sint)
+  result_matrix = sfixArray(NUM_ROWS * NUM_COLS)
   @for_range(NUM_ROWS * NUM_COLS)
   def range_body(i):
-    result_matrix[i] = 0
+    result_matrix[i] = sfix(0)
   @for_range(NUM_ROWS)
   def range_body(i):
     @for_range(NUM_COLS)
@@ -125,45 +193,16 @@ def multiply_matrices(left_matrix, right_matrix):
   
 
 
-def write_matrix_to_clients(sockets, number_clients, matrix):
-  rnd_from_triple = sint.get_random_triple()[0]
-  @for_range(number_clients)
-  def loop_body(i):
-    @for_range(NUM_ROWS * NUM_COLS)
-    def loop_body(j):
-      auth_result = matrix[j] * rnd_from_triple
-      sint.write_shares_to_socket(sockets[i], [matrix[j], rnd_from_triple, auth_result])
-
-
-
-
 def send_weights_to_clients(sockets, number_clients, weights):
   rnd_from_triple = sint.get_random_triple()[0]
   @for_range(number_clients)
   def loop_body(i):
-    @for_range(NUM_ROWS)
+    @for_range(NUM_COLS)
     def loop_body(j):
       auth_result = weights[j] * rnd_from_triple
-      sint.write_shares_to_socket(sockets[i], [matrix[j], rnd_from_triple, auth_result])
+      sint.write_shares_to_socket(sockets[i], [weights[j], rnd_from_triple, auth_result])
 
 
-
-def accept_client_input():
-	client_socket_id = regint()
-	acceptclientconnection(client_socket_id, PORTNUM)
-	print_ln("Received Client Input!")
-	client_inputs = sint.receive_from_client(1 + NUM_ROWS * NUM_COLS, client_socket_id)
-	finish = client_inputs[0]
-	XX_inv = Array(NUM_ROWS * NUM_COLS, sint)
-	for i in range(1, NUM_ROWS * NUM_COLS + 1):
-		XX_inv[i - 1] = client_inputs[i]
-
-	Xy = Array(NUM_ROWS, sint)
-	client_inputs = sint.receive_from_client(DIMENSION_WEIGHT, client_socket_id)
-	for i in range(NUM_ROWS):
-		Xy[i] = client_inputs[i]
-
-	return XX_inv, Xy, client_socket_id, finish
 
 
 
@@ -172,22 +211,82 @@ PORTNUM = 14000
 rho = 0.01
 l = 0.008
 admm_iter = 10
+def init():
+	listen(PORTNUM)
+	print_ln('Listening for client connections on base port %s', PORTNUM)
+	XXinv_cache = sfixArray(MAX_NUM_CLIENTS * NUM_ROWS * NUM_COLS)
+	Xy_cache = sfixArray(MAX_NUM_CLIENTS * NUM_ROWS)
+	client_sockets = Array(MAX_NUM_CLIENTS, regint)
+	number_clients = MemValue(regint(0))
+	XXinv_index = MemValue(regint(0))
+	Xy_index = MemValue(regint(0))
+	@for_range(MAX_NUM_CLIENTS)
+	def loop_body(i):
+		XX_inv, Xy, client_sockets[i], finish = accept_client_input()
+		@for_range(NUM_ROWS * NUM_COLS)
+		def loop_body(k):
+			XXinv_cache[XXinv_index] = XX_inv[i]
+			XXinv_index.write(XXinv_index + 1)
+		@for_range(NUM_ROWS)
+		def loop_body(k):
+			Xy_cache[Xy_index] = Xy[i]
+			Xy_index.write(Xy_index + 1)
+
+		number_clients.write(number_clients+1)
+	return XXinv_cache, Xy_cache, client_sockets
+
+
+
+def accept_client_input():
+	client_socket_id = regint()
+	acceptclientconnection(client_socket_id, PORTNUM)
+	print_ln("Received Client Input!")
+	client_inputs = sfix.receive_from_client(1 + NUM_ROWS * NUM_COLS, client_socket_id)
+	finish = client_inputs[0]
+	XX_inv = sfixArray(NUM_ROWS * NUM_COLS)
+	for i in range(1, NUM_ROWS * NUM_COLS + 1):
+		XX_inv[i - 1] = sfix(client_inputs[i])
+
+	Xy = sfixArray(NUM_ROWS)
+	client_inputs = sfix.receive_from_client(DIMENSION_WEIGHT, client_socket_id)
+	for i in range(NUM_ROWS):
+		Xy[i] = sfix(client_inputs[i])
+
+	return XX_inv, Xy, client_socket_id, finish
+
 def main():
 	listen(PORTNUM)
 	print_ln('Listening for client connections on base port %s', PORTNUM)
 	@do_while
-	def game_loop():
-		XXinv_cache = []
-		Xy_cache = []
+	def loop():
+		XXinv_cache = sfixArray(MAX_NUM_CLIENTS * NUM_ROWS * NUM_COLS)
+		Xy_cache = sfixArray(MAX_NUM_CLIENTS * NUM_ROWS)
 		client_sockets = Array(MAX_NUM_CLIENTS, regint)
+		number_clients = MemValue(regint(0))
+		XXinv_index = MemValue(regint(0))
+		Xy_index = MemValue(regint(0))
 		@for_range(MAX_NUM_CLIENTS)
 		def loop_body(i):
 			XX_inv, Xy, client_sockets[i], finish = accept_client_input()
-			XXinv_cache += XX_inv
-			Xy_cache += Xy
+			@for_range(NUM_ROWS * NUM_COLS)
+			def loop_body(k):
+				XXinv_cache[XXinv_index] = XX_inv[i]
+				XXinv_index.write(XXinv_index + 1)
+			@for_range(NUM_ROWS)
+			def loop_body(k):
+				Xy_cache[Xy_index] = Xy[i]
+				Xy_index.write(Xy_index + 1)
+
 			number_clients.write(number_clients+1)
-        weights = admm(XXinv_cache, Xy_cache, admm_iter, rho, l)
-        send_weights_to_clients(client_sockets, MAX_NUM_CLIENTS, weights)
-        return True
+		#XXinv_cache, Xy_cache, client_sockets = init()
+		weights = admm(XXinv_cache, Xy_cache, admm_iter, rho, l)
+		new_weights = Array(len(weights), sint)
+		@for_range(len(weights))
+		def loop_body(i):
+			val = weights[i] * (10 ** FP_FACTOR)
+			new_weights[i] = val.conv()
+
+		send_weights_to_clients(client_sockets, MAX_NUM_CLIENTS, new_weights)
+		return True
 
 main()

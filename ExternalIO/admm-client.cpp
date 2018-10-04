@@ -53,10 +53,11 @@
 
 using namespace Eigen;
 using namespace std;
+
 using json = nlohmann::json;
 
-const int NUM_ROWS = 2;
-const int NUM_COLUMNS = 2;
+const int NUM_ROWS = 10;
+const int NUM_COLUMNS = 10;
 
 // Send the private inputs masked with a random value.
 // Receive shares of a preprocessed triple from each SPDZ engine, combine and check the triples are valid.
@@ -89,6 +90,8 @@ void send_private_inputs(vector<gfp>& values, vector<int>& sockets, int nparties
     {
         if (triples[i][0] * triples[i][1] != triples[i][2])
         {
+            cout << triples[i][0] << " , " << triples[i][1] << " , " << triples[i][2] << endl;
+            cout << triples[i][0] * triples[i][1] << endl;
             cerr << "Incorrect triple at " << i << ", aborting\n";
             exit(1);
         }
@@ -167,13 +170,12 @@ vector<gfp> receive_result(vector<int>& sockets, int nparties)
 }
 
 
-MatrixXd readMatrix(string file_name, int rho) {
-    cout << rho;
+vector<gfp> readMatrix(string file_name, int rho, int finish, int numShift) {
     std::ifstream i(file_name);
     json j;
     i >> j;
     MatrixXd data_matrix(NUM_ROWS, NUM_COLUMNS);
-    VectorXd y(3);
+    VectorXd y(NUM_ROWS);
     vector<double> x_data = j["x"];
     vector<double> y_data = j["y"];
     for (int i = 0; i < NUM_ROWS; i++) {
@@ -182,8 +184,48 @@ MatrixXd readMatrix(string file_name, int rho) {
             data_matrix(i, j) = x_data[i * NUM_COLUMNS + j];
         }
     }
-    return data_matrix;
+
+
+    //Compute values of matrices
+    MatrixXd transpose = data_matrix.transpose();
+    MatrixXd XTX = data_matrix * transpose;
+
+    MatrixXd identity = MatrixXd::Identity(NUM_ROWS, NUM_COLUMNS);
+
+    MatrixXd rho_identity = rho * identity;
+
+    MatrixXd XTX_rhoI = XTX + rho_identity;
+
+    MatrixXd XTy = transpose * y;
+
+
+    // Put values into vector to send to server 
+    vector<gfp> values;
+    values.push_back(finish);
+    int r = XTX_rhoI.rows();
+    int c = XTX_rhoI.cols();
+    for (int i = 0; i < r; i++) {
+        for (int j = 0; j < c; j++) {
+            int x = XTX_rhoI(i, j) * pow(10, numShift);
+            gfp val = x;
+            cout << XTX_rhoI(i, j) << " , " << val << endl;
+            values.push_back(val);
+        }
+    }
+
+    r = XTy.rows();
+    c = XTy.cols();
+    for (int i = 0; i < r; i++) {
+        for (int j = 0; j < c; j++) {
+            int x = XTy(i, j) * pow(10, numShift);
+            gfp val = x;
+            values.push_back(val);
+        }
+    }
+
+    return values;
 }
+
 
 
 
@@ -194,13 +236,14 @@ void func(int argc, char** argv) {
 }
 
 int main(int argc, char** argv) {
-    /*
-    srand(time(NULL));
+    
+    //srand(time(NULL));
     clock_t start;
     double duration;
     int port_base = 14000;
     int nparties = 2;
     int finish;
+    int numShift = 6;
     string host_name = "localhost";
 
     if (argc < 1) {
@@ -209,47 +252,54 @@ int main(int argc, char** argv) {
     }
 
 
-    finish = atoi(argv[0]);
-    //nparties = atoi(argv[1]);
+    finish = 5;
+    string file_name = argv[1];
 
     // init static gfp
-    string prep_data_prefix = get_prep_dir(nparties, 128, 40);
+    string prep_data_prefix = get_prep_dir(nparties, 128, 128);
     initialise_fields(prep_data_prefix);
 
-
+    
     vector<int> sockets(nparties);
+    
     for (int i = 0; i < nparties; i++)
     {
         set_up_client_socket(sockets[i], host_name.c_str(), port_base + i);
     }
     cout << "Finish setup socket connections to SPDZ engines." << endl;
-    vector<gfp> matrix = generateMatrix(finish);
-
+    
+    int rho = 0.08;
+    vector<gfp> values = readMatrix(file_name, rho, finish, numShift);
+    cout << "Successfully read matrix" << endl;
 
     start = clock();
     // Run the commputation
-    send_private_inputs(matrix, sockets, nparties);
+
+    send_private_inputs(values, sockets, nparties);
     cout << "Sent private inputs to each SPDZ engine, waiting for result..." << endl;
 
     // Get the result back (client_id of winning client)
     vector<gfp> result = receive_result(sockets, nparties);
 
+    //Shift here!!!!!!!!
+    vector<gfp> weights;
+    for (unsigned int i = 0; i < result.size(); i++) {
+        gfp val;
+        val = val;
+        weights.push_back(val);
+    }
+
     duration = (clock() - start ) / (double) CLOCKS_PER_SEC;
-    printf(" Took %f seconds for matrix multiplication", duration);
-    for (int i = 0; i < NUM_ROWS * NUM_COLUMNS; i++) {
-        cout << result[i] << " , ";
+    printf(" Took %f seconds for admm", duration);
+    
+
+    cout << "Weights for ADMM" << endl;
+    for (unsigned int i = 0; i < weights.size(); i++) {
+        cout << weights[i] << " , ";
     }
     for (int i = 0; i < nparties; i++) {
         close_client_socket(sockets[i]);
     }
-    */
+    
     func(argc, argv);
-    MatrixXd x = readMatrix("data.json", 3);
-    cout << "Printing matrix!!!!" << endl;
-    for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < 2; j++) {
-            cout << x(i, j) << endl;;
-        }
-    }
-    return 0;
 }
