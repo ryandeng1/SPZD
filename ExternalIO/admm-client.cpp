@@ -91,7 +91,6 @@ void send_private_inputs(vector<gfp>& values, vector<int>& sockets, int nparties
         if (triples[i][0] * triples[i][1] != triples[i][2])
         {
             cout << triples[i][0] << " , " << triples[i][1] << " , " << triples[i][2] << endl;
-            cout << triples[i][0] * triples[i][1] << endl;
             cerr << "Incorrect triple at " << i << ", aborting\n";
             exit(1);
         }
@@ -122,7 +121,8 @@ void initialise_fields(const string& dir_prefix)
   if (inpf.fail()) { throw file_error(filename.c_str()); }
   inpf >> p;
   inpf >> lg2;
-
+  cout << "Prime " << p << endl;
+  cout << "lg2 " << lg2 << endl;
   inpf.close();
 
   gfp::init_field(p);
@@ -159,11 +159,12 @@ gfp receive_one_result(vector<int>& sockets, int nparties)
 vector<gfp> receive_result(vector<int>& sockets, int nparties)
 {
     cout << "Receiving matrix" << endl;
-    vector<gfp> output_values(NUM_ROWS * NUM_COLUMNS);    
+    vector<gfp> output_values(NUM_COLUMNS);    
     octetStream os;
-    for (int i = 0; i < NUM_ROWS * NUM_COLUMNS; i++)
+    for (int i = 0; i < NUM_COLUMNS; i++)
     {
         output_values[i] = receive_one_result(sockets, nparties);
+        cout << "received " << output_values[i] << endl;
     }
 
     return output_values;
@@ -171,6 +172,7 @@ vector<gfp> receive_result(vector<int>& sockets, int nparties)
 
 
 vector<gfp> readMatrix(string file_name, int rho, int finish, int numShift) {
+    cout << finish << endl;
     std::ifstream i(file_name);
     json j;
     i >> j;
@@ -201,14 +203,14 @@ vector<gfp> readMatrix(string file_name, int rho, int finish, int numShift) {
 
     // Put values into vector to send to server 
     vector<gfp> values;
-    values.push_back(finish);
+    values.push_back(5);
     int r = XTX_rhoI.rows();
     int c = XTX_rhoI.cols();
     for (int i = 0; i < r; i++) {
         for (int j = 0; j < c; j++) {
-            int x = XTX_rhoI(i, j) * pow(10, numShift);
+            uint64_t x = XTX_rhoI(i, j) * pow(2, numShift);
             gfp val = x;
-            cout << XTX_rhoI(i, j) << " , " << val << endl;
+            cout << XTX_rhoI(i, j) << " , ";
             values.push_back(val);
         }
     }
@@ -217,7 +219,7 @@ vector<gfp> readMatrix(string file_name, int rho, int finish, int numShift) {
     c = XTy.cols();
     for (int i = 0; i < r; i++) {
         for (int j = 0; j < c; j++) {
-            int x = XTy(i, j) * pow(10, numShift);
+            uint64_t x = XTy(i, j) * pow(2, numShift);
             gfp val = x;
             values.push_back(val);
         }
@@ -243,7 +245,9 @@ int main(int argc, char** argv) {
     int port_base = 14000;
     int nparties = 2;
     int finish;
-    int numShift = 6;
+
+    //Shift all numbers over by 20 bits
+    int numShift = 20;
     string host_name = "localhost";
 
     if (argc < 1) {
@@ -270,6 +274,9 @@ int main(int argc, char** argv) {
     
     int rho = 0.08;
     vector<gfp> values = readMatrix(file_name, rho, finish, numShift);
+    for (unsigned int i = 0; i < values.size(); i++) {
+        cout << values[i] << " , " << endl;
+    }
     cout << "Successfully read matrix" << endl;
 
     start = clock();
@@ -282,21 +289,23 @@ int main(int argc, char** argv) {
     vector<gfp> result = receive_result(sockets, nparties);
 
     //Shift here!!!!!!!!
+    /*
     vector<gfp> weights;
     for (unsigned int i = 0; i < result.size(); i++) {
-        gfp val;
-        val = val;
+        
         weights.push_back(val);
     }
+    */
 
     duration = (clock() - start ) / (double) CLOCKS_PER_SEC;
     printf(" Took %f seconds for admm", duration);
     
-
+    /*
     cout << "Weights for ADMM" << endl;
-    for (unsigned int i = 0; i < weights.size(); i++) {
-        cout << weights[i] << " , ";
+    for (unsigned int i = 0; i < result.size(); i++) {
+        cout << result[i] << " , ";
     }
+    */
     for (int i = 0; i < nparties; i++) {
         close_client_socket(sockets[i]);
     }
