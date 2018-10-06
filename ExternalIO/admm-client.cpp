@@ -121,8 +121,6 @@ void initialise_fields(const string& dir_prefix)
   if (inpf.fail()) { throw file_error(filename.c_str()); }
   inpf >> p;
   inpf >> lg2;
-  cout << "Prime " << p << endl;
-  cout << "lg2 " << lg2 << endl;
   inpf.close();
 
   gfp::init_field(p);
@@ -171,7 +169,8 @@ vector<gfp> receive_result(vector<int>& sockets, int nparties)
 }
 
 
-vector<gfp> readMatrix(string file_name, int rho, int finish, int numShift) {
+vector<gfp> readMatrix(string file_name, double rho, int finish, int numShift) {
+    cout << "Reading matrix" << endl;
     cout << finish << endl;
     std::ifstream i(file_name);
     json j;
@@ -189,38 +188,40 @@ vector<gfp> readMatrix(string file_name, int rho, int finish, int numShift) {
 
 
     //Compute values of matrices
+    cout << "Matrix" << endl;
+    cout << data_matrix << endl;
     MatrixXd transpose = data_matrix.transpose();
-    MatrixXd XTX = data_matrix * transpose;
 
+    
+    MatrixXd XTX = transpose * data_matrix;
     MatrixXd identity = MatrixXd::Identity(NUM_ROWS, NUM_COLUMNS);
-
     MatrixXd rho_identity = rho * identity;
-
     MatrixXd XTX_rhoI = XTX + rho_identity;
-
+    MatrixXd inverse = XTX_rhoI.inverse();
     MatrixXd XTy = transpose * y;
 
 
     // Put values into vector to send to server 
     vector<gfp> values;
     values.push_back(5);
-    int r = XTX_rhoI.rows();
-    int c = XTX_rhoI.cols();
+    int r = inverse.rows();
+    int c = inverse.cols();
     for (int i = 0; i < r; i++) {
         for (int j = 0; j < c; j++) {
-            uint64_t x = XTX_rhoI(i, j) * pow(2, numShift);
-            gfp val = x;
-            cout << XTX_rhoI(i, j) << " , ";
+            double x = inverse(i, j) * pow(2, numShift);
+            uint64_t y = x;
+            gfp val = y;
             values.push_back(val);
         }
-    }
+    }  
 
     r = XTy.rows();
     c = XTy.cols();
     for (int i = 0; i < r; i++) {
         for (int j = 0; j < c; j++) {
-            uint64_t x = XTy(i, j) * pow(2, numShift);
-            gfp val = x;
+            double x = XTy(i, j) * pow(2, numShift);
+            uint64_t y = x;
+            gfp val = y;
             values.push_back(val);
         }
     }
@@ -264,6 +265,17 @@ int main(int argc, char** argv) {
     initialise_fields(prep_data_prefix);
 
     
+    
+    double rho = 0.01;
+    vector<gfp> values = readMatrix(file_name, rho, finish, numShift);
+    /*
+    for (unsigned int i = 0; i < values.size(); i++) {
+        cout << values[i] << " , " << endl;
+    }
+    */
+    cout << "Successfully read matrix" << endl;
+
+
     vector<int> sockets(nparties);
     
     for (int i = 0; i < nparties; i++)
@@ -272,14 +284,8 @@ int main(int argc, char** argv) {
     }
     cout << "Finish setup socket connections to SPDZ engines." << endl;
     
-    int rho = 0.08;
-    vector<gfp> values = readMatrix(file_name, rho, finish, numShift);
-    for (unsigned int i = 0; i < values.size(); i++) {
-        cout << values[i] << " , " << endl;
-    }
-    cout << "Successfully read matrix" << endl;
-
     start = clock();
+
     // Run the commputation
 
     send_private_inputs(values, sockets, nparties);
