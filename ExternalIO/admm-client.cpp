@@ -175,11 +175,15 @@ vector<double> receive_result(vector<int>& sockets, int nparties)
         to_bigint(val_negate, gfp_val);
 
 
-        double converted_double = mpz_get_d(val.get_mpz_t());
-        double converted_double_negate = mpz_get_d(val_negate.get_mpz_t());
-        cout << "Converted double " << converted_double / pow(2, 20) << endl;
-        cout << "Converted double negative " << -1 * converted_double_negate / pow(2, 20) << endl;
-        output_values[i] = converted_double / pow(2, 20);
+        double converted_double = mpz_get_d(val.get_mpz_t()) / pow(2, 20);
+        double converted_double_negate = -1 * mpz_get_d(val_negate.get_mpz_t()) / pow(2, 20);
+        cout << "Converted double " << converted_double << endl;
+        cout << "Converted double negative " << converted_double_negate << endl;
+        if (abs(converted_double) < 10) {
+            output_values[i] = converted_double;
+        } else {
+            output_values[i] = converted_double_negate;
+        }
         //cout << "received " << output_values[i] << endl;
     }
 
@@ -312,24 +316,16 @@ int main(int argc, char** argv) {
     // Get the result back (client_id of winning client)
     vector<double> result = receive_result(sockets, nparties);
 
-    //Shift here!!!!!!!!
-    /*
-    vector<gfp> weights;
-    for (unsigned int i = 0; i < result.size(); i++) {
-        
-        weights.push_back(val);
-    }
-    */
 
     duration = (clock() - start ) / (double) CLOCKS_PER_SEC;
     printf(" Took %f seconds for admm", duration);
     
-    /*
+    
     cout << "Weights for ADMM" << endl;
     for (unsigned int i = 0; i < result.size(); i++) {
-        cout << result[i] << " , ";
+        cout << result[i] << " , " << endl;
     }
-    */
+    
     for (int i = 0; i < nparties; i++) {
         close_client_socket(sockets[i]);
     }
