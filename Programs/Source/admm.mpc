@@ -274,12 +274,12 @@ def send_weights_to_clients(sockets, number_clients, weights):
 
 
 
-
-MAX_NUM_CLIENTS = 2
+# Params
+MAX_NUM_CLIENTS = 4
 PORTNUM = 14000
 rho = 0.01
 l = 0.008
-admm_iter = 100
+admm_iter = 10
 
 def accept_client_input():
 	client_socket_id = regint()

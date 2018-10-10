@@ -41,6 +41,7 @@
 #include "Auth/fake-stuff.h"
 #include "Eigen/Dense"
 #include "json/json.hpp"
+#include<gmp.h>
 
 #include <sodium.h>
 #include <iostream>
@@ -154,15 +155,32 @@ gfp receive_one_result(vector<int>& sockets, int nparties)
 }
 
 
-vector<gfp> receive_result(vector<int>& sockets, int nparties)
+vector<double> receive_result(vector<int>& sockets, int nparties)
 {
     cout << "Receiving matrix" << endl;
-    vector<gfp> output_values(NUM_COLUMNS);    
+    vector<double> output_values(NUM_COLUMNS);    
     octetStream os;
     for (int i = 0; i < NUM_COLUMNS; i++)
     {
-        output_values[i] = receive_one_result(sockets, nparties);
-        cout << "received " << output_values[i] << endl;
+        //gfp gfp_val;
+        gfp gfp_val = receive_one_result(sockets, nparties);
+
+
+        const gfp gfp_regular = gfp_val;
+        bigint val;
+        to_bigint(val, gfp_regular);
+
+        bigint val_negate;
+        gfp_val.negate();
+        to_bigint(val_negate, gfp_val);
+
+
+        double converted_double = mpz_get_d(val.get_mpz_t());
+        double converted_double_negate = mpz_get_d(val_negate.get_mpz_t());
+        cout << "Converted double " << converted_double / pow(2, 20) << endl;
+        cout << "Converted double negative " << -1 * converted_double_negate / pow(2, 20) << endl;
+        output_values[i] = converted_double / pow(2, 20);
+        //cout << "received " << output_values[i] << endl;
     }
 
     return output_values;
@@ -292,7 +310,7 @@ int main(int argc, char** argv) {
     cout << "Sent private inputs to each SPDZ engine, waiting for result..." << endl;
 
     // Get the result back (client_id of winning client)
-    vector<gfp> result = receive_result(sockets, nparties);
+    vector<double> result = receive_result(sockets, nparties);
 
     //Shift here!!!!!!!!
     /*
