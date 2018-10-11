@@ -266,7 +266,7 @@ int main(int argc, char** argv) {
     clock_t start;
     double duration;
     int port_base = 14000;
-    int nparties = 2;
+    int nparties = 4;
     int finish;
 
     //Shift all numbers over by 20 bits
