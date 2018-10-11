@@ -304,37 +304,35 @@ def accept_client_input():
 def main():
 	listen(PORTNUM)
 	print_ln('Listening for client connections on base port %s', PORTNUM)
-	@do_while
-	def loop():
-		XXinv_cache = sfixArray(MAX_NUM_CLIENTS * NUM_ROWS * NUM_COLS)
-		Xy_cache = sfixArray(MAX_NUM_CLIENTS * NUM_ROWS)
-		client_sockets = Array(MAX_NUM_CLIENTS, regint)
-		number_clients = MemValue(regint(0))
-		XXinv_index = MemValue(regint(0))
-		Xy_index = MemValue(regint(0))
-		@for_range(MAX_NUM_CLIENTS)
-		def loop_body(i):
-			XX_inv, Xy, client_sockets[i], finish = accept_client_input()
-			@for_range(len(XX_inv))
-			def loop_body(k):
-				XXinv_cache[XXinv_index] = XX_inv[k]
-				XXinv_index.write(XXinv_index + 1)
-			@for_range(len(Xy))
-			def loop_body(j):
-				Xy_cache[Xy_index] = Xy[j]
-				Xy_index.write(Xy_index + 1)
-				print_ln("%s %s", Xy_index, Xy[j].reveal())
+	XXinv_cache = sfixArray(MAX_NUM_CLIENTS * NUM_ROWS * NUM_COLS)
+	Xy_cache = sfixArray(MAX_NUM_CLIENTS * NUM_ROWS)
+	client_sockets = Array(MAX_NUM_CLIENTS, regint)
+	number_clients = MemValue(regint(0))
+	XXinv_index = MemValue(regint(0))
+	Xy_index = MemValue(regint(0))
+	@for_range(MAX_NUM_CLIENTS)
+	def loop_body(i):
+		XX_inv, Xy, client_sockets[i], finish = accept_client_input()
+		@for_range(len(XX_inv))
+		def loop_body(k):
+			XXinv_cache[XXinv_index] = XX_inv[k]
+			XXinv_index.write(XXinv_index + 1)
+		@for_range(len(Xy))
+		def loop_body(j):
+			Xy_cache[Xy_index] = Xy[j]
+			Xy_index.write(Xy_index + 1)
+		#print_ln("%s %s", Xy_index, Xy[j].reveal())
 
-			number_clients.write(number_clients+1)
-		weights = admm(XXinv_cache, Xy_cache, admm_iter, rho, l)
-		new_weights = Array(len(weights), sint)
-		print_ln("%s", "Printing weights......")
-		@for_range(len(weights))
-		def loop_body(i):
-			new_weights[i] = weights[i].v
-			print_ln("%s", weights[i].reveal())
+	number_clients.write(number_clients+1)
+	weights = admm(XXinv_cache, Xy_cache, admm_iter, rho, l)
+	new_weights = Array(len(weights), sint)
+	print_ln("%s", "Printing weights......")
+	@for_range(len(weights))
+	def loop_body(i):
+		new_weights[i] = weights[i].v
+		print_ln("%s", weights[i].reveal())
 
-		send_weights_to_clients(client_sockets, MAX_NUM_CLIENTS, new_weights)
-		return True
+	send_weights_to_clients(client_sockets, MAX_NUM_CLIENTS, new_weights)
+		
 
 main()
