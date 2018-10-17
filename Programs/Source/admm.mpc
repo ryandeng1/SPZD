@@ -1,14 +1,13 @@
 # (C) 2018 University of Bristol. See License.txt
-
-NUM_ROWS = 10
+import sys
+sys.setrecursionlimit(4500)
 
 from Compiler.types import sint, regint, Array, MemValue
 from Compiler.instructions import listen, acceptclientconnection
 from Compiler.library import print_ln, do_while, for_range
 from Compiler.util import if_else
-
-NUM_COLS = 10
-DIMENSION_WEIGHT = 10
+NUM_ROWS = 100
+NUM_COLS = 100
 DECIMAL_PRECISION = 20
 
 # Shift 20 places to get from float representation to int representation
@@ -56,12 +55,12 @@ def soft_threshold_vec(th, vec):
     	#print_ln("%s %s %s", mem_th.read().reveal(), mem_v.read().reveal(), mem_th_neg.read().reveal())
     	@if_((v > th).reveal())
     	def f():
-    		print_ln("%s %s %s", "passed first inner loop", v.reveal(), th.reveal())
+    		#print_ln("%s %s %s", "passed first inner loop", v.reveal(), th.reveal())
     		vec_new[i] = vec[i] - th
 
     	@if_((v < neg_th).reveal())
     	def g():
-    		print_ln("%s %s %s", "passed second inner loop", v.reveal(), neg_th.reveal())
+    		#print_ln("%s %s %s", "passed second inner loop", v.reveal(), neg_th.reveal())
     		vec_new[i] = vec[i] + th
 
 
@@ -87,7 +86,7 @@ def admm_coordinate(w_list, u_list, z, rho, l):
 		copy_ith_matrix(u_avg, new_u_avg, 0, len(w))
 
 
-
+	"""
 	print_ln("%s", "ADMM COORDINATE W_LIST")
 	@for_range(len(w_list))
 	def loop_body(i):
@@ -98,6 +97,7 @@ def admm_coordinate(w_list, u_list, z, rho, l):
 	def loop_body(i):
 		print_ln("%s", u_list[i].reveal())
 
+	"""
 	"""
 	print_ln("%s", "AVERAGES !!!!@!@!@!@")
 	@for_range(len(w_avg))
@@ -120,11 +120,12 @@ def admm_coordinate(w_list, u_list, z, rho, l):
 	# threshold
 	th = sfix(l) / sfix(rho * nparties)
 	u_plus_w = add_matrices(w_avg, u_avg)
+	"""
 	print_ln("%s", "Let's figure out u + w")
 	@for_range(len(u_plus_w))
 	def loop_body(i):
 		print_ln("%s", u_plus_w[i].reveal())
-
+	"""
 	z_new = soft_threshold_vec(th, u_plus_w)
 	u_list_new = sfixArray(len(u_list))
 	neg_z = sfixArray(len(z_new))
@@ -138,10 +139,6 @@ def admm_coordinate(w_list, u_list, z, rho, l):
 		intermediate_vec = add_matrices(u_i, w_i)
 		sum_vec = add_matrices(intermediate_vec, neg_z)
 		copy_ith_matrix(u_list_new, sum_vec, i, NUM_ROWS)
-		print_ln("%s", "Looking at u_i + w_i - z_new")
-		@for_range(len(sum_vec))
-		def loop_body(j):
-			print_ln("%s", sum_vec[i].reveal())
 	return (u_list_new, z_new)
 
 
@@ -212,18 +209,18 @@ def admm(XXinv_cache, Xy_cache, admm_iter, rho, l):
 		def loop_body(j):
 			w_list[j] = new_w_list[j]
 			u_list[j] = new_u_list[j]
-		
+		"""	
 		print_ln("%s", "WE finna be out here finding the new u's and z's")
 		print_ln("%s", "z first")
 		@for_range(len(new_z))
 		def loop_body(i):
 			z[i] = new_z[i]
-			print_ln("%s", z[i].reveal())
+			#print_ln("%s", z[i].reveal())
 		print_ln("%s", "Now for the u")
 		@for_range(len(new_u_list))
 		def loop(i):
-			print_ln("%s", new_u_list[i].reveal())
-
+			#print_ln("%s", new_u_list[i].reveal())
+		"""
 	return z
 
 
@@ -285,14 +282,13 @@ def accept_client_input():
 	client_socket_id = regint()
 	acceptclientconnection(client_socket_id, PORTNUM)
 	print_ln("Received Client Input!")
-	client_inputs = sint.receive_from_client(1 + NUM_ROWS * NUM_COLS + DIMENSION_WEIGHT, client_socket_id)
+	client_inputs = sint.receive_from_client(1 + NUM_ROWS * NUM_COLS + NUM_ROWS, client_socket_id)
 	finish = client_inputs[0]
 	XX_inv = sfixArray(NUM_ROWS * NUM_COLS)
 	print_ln("%s", "Getting input")
 	for i in range(1, NUM_ROWS * NUM_COLS + 1):
 		x = sfix(client_inputs[i])
 		XX_inv[i - 1] = x
-		print_ln("%s", x.reveal())
 
 	Xy = sfixArray(NUM_ROWS)
 	for i in range(NUM_ROWS):
@@ -330,7 +326,7 @@ def main():
 	@for_range(len(weights))
 	def loop_body(i):
 		new_weights[i] = weights[i].v
-		print_ln("%s", weights[i].reveal())
+		#print_ln("%s", weights[i].reveal())
 
 	send_weights_to_clients(client_sockets, MAX_NUM_CLIENTS, new_weights)
 		
