@@ -16,8 +16,8 @@ PREP_DIR = '-DPREP_DIR="Player-Data/"'
 # set for 128-bit GF(2^n) and/or OT preprocessing
 USE_GF2N_LONG = 1
 #USE_GF2N_LONG = 0
-#MY_CFLAGS = -DINSECURE
-USE_NTL = 1
+MY_CFLAGS = -DINSECURE
+#USE_NTL = 1
 # set to -march=<architecture> for optimization
 # AVX2 support (Haswell or later) changes the bit matrix transpose
 ARCH = -mtune=native -mavx
