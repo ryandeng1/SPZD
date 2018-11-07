@@ -265,7 +265,7 @@ int main(int argc, char** argv) {
     //srand(time(NULL));
     clock_t start;
     double duration;
-    int port_base = 14000;
+    int port_base = atoi(argv[3]);
     int nparties = 4;
     int finish;
 
