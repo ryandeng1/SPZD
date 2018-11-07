@@ -266,12 +266,12 @@ def multiply_matrices(left_matrix, right_matrix, num_rows_a, num_cols_a, num_row
 
 
 def send_weights_to_clients(sockets, number_clients, weights):
+  rnd_from_triple = sint.get_random_triple()[0]
   @for_range(NUM_COLS)
   def loop_body(i):
-   rnd_from_triple = sint.get_random_triple()[0]
    @for_range(number_clients)
    def loop_body(j): 
-    auth_result = weights[j] * rnd_from_triple
+    auth_result = weights[i] * rnd_from_triple
     sint.write_shares_to_socket(sockets[j], [weights[i], rnd_from_triple, auth_result])
 
 
