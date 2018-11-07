@@ -265,12 +265,14 @@ int main(int argc, char** argv) {
     //srand(time(NULL));
     clock_t start;
     double duration;
-    int port_base = atoi(argv[3]);
+    int port_base = 14000;
     int nparties = 4;
     int finish;
 
     //Shift all numbers over by 20 bits
     int numShift = 20;
+
+    string host_names[] = {"ec2-52-39-162-238.us-west-2.compute.amazonaws.com", "ec2-34-223-215-198.us-west-2.compute.amazonaws.com", "ec2-23-20-124-131.compute-1.amazonaws.com", "ec2-52-73-142-253.compute-1.amazonaws.com"};
     string host_name = argv[2];
 
     if (argc < 1) {
@@ -302,7 +304,7 @@ int main(int argc, char** argv) {
     
     for (int i = 0; i < nparties; i++)
     {
-        set_up_client_socket(sockets[i], host_name.c_str(), port_base + i);
+        set_up_client_socket(sockets[i], host_names[i].c_str(), port_base + i);
     }
     cout << "Finish setup socket connections to SPDZ engines." << endl;
     
