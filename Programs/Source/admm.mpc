@@ -209,18 +209,14 @@ def admm(XXinv_cache, Xy_cache, admm_iter, rho, l):
 		def loop_body(j):
 			w_list[j] = new_w_list[j]
 			u_list[j] = new_u_list[j]
-		"""	
-		print_ln("%s", "WE finna be out here finding the new u's and z's")
+			
 		print_ln("%s", "z first")
 		@for_range(len(new_z))
 		def loop_body(i):
 			z[i] = new_z[i]
-			#print_ln("%s", z[i].reveal())
-		print_ln("%s", "Now for the u")
-		@for_range(len(new_u_list))
-		def loop(i):
-			#print_ln("%s", new_u_list[i].reveal())
-		"""
+			print_ln("%s", z[i].reveal())
+
+		
 	return z
 
 
@@ -326,7 +322,7 @@ def main():
 	@for_range(len(weights))
 	def loop_body(i):
 		new_weights[i] = weights[i].v
-		#print_ln("%s", weights[i].reveal())
+		print_ln("%s", weights[i].reveal())
 
 	send_weights_to_clients(client_sockets, MAX_NUM_CLIENTS, new_weights)
 		
