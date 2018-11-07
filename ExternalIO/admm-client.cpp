@@ -271,7 +271,7 @@ int main(int argc, char** argv) {
 
     //Shift all numbers over by 20 bits
     int numShift = 20;
-    string host_name = "localhost";
+    string host_name = argv[2];
 
     if (argc < 1) {
         cout << "Please provide client id" << endl;
