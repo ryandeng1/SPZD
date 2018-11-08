@@ -1,7 +1,7 @@
 # (C) 2018 University of Bristol. See License.txt
 import sys
 sys.setrecursionlimit(4500)
-
+import time
 from Compiler.types import sint, regint, Array, MemValue
 from Compiler.instructions import listen, acceptclientconnection
 from Compiler.library import print_ln, do_while, for_range
@@ -316,6 +316,7 @@ def main():
 		#print_ln("%s %s", Xy_index, Xy[j].reveal())
 
 	number_clients.write(number_clients+1)
+	start = time.time()
 	weights = admm(XXinv_cache, Xy_cache, admm_iter, rho, l)
 	new_weights = Array(len(weights), sint)
 	print_ln("%s", "Printing weights......")
@@ -325,6 +326,7 @@ def main():
 		print_ln("%s", weights[i].reveal())
 
 	send_weights_to_clients(client_sockets, MAX_NUM_CLIENTS, new_weights)
-		
+	end = time.time()
+	print_ln("%s", "Finding weights took {0} many seconds".format(str(end - start)))	
 
 main()
