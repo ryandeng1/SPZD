@@ -17,7 +17,8 @@ PREP_DIR = '-DPREP_DIR="Player-Data/"'
 USE_GF2N_LONG = 1
 #USE_GF2N_LONG = 0
 MY_CFLAGS = -DINSECURE
-#USE_NTL = 1
+USE_NTL = 1
+
 # set to -march=<architecture> for optimization
 # AVX2 support (Haswell or later) changes the bit matrix transpose
 ARCH = -mtune=native -mavx
@@ -31,7 +32,7 @@ endif
 
 # MAX_MOD_SZ must be at least ceil(len(p)/len(word))
 # Default is 2, which suffices for 128-bit p
-# MOD = -DMAX_MOD_SZ=2
+MOD = -DMAX_MOD_SZ=6
 
 LDLIBS = -lmpirxx -lmpir -lsodium $(MY_LDLIBS) -lm -lpthread 
 
