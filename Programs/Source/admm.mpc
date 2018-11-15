@@ -6,8 +6,8 @@ from Compiler.types import sint, regint, Array, MemValue
 from Compiler.instructions import listen, acceptclientconnection
 from Compiler.library import print_ln, do_while, for_range
 from Compiler.util import if_else
-NUM_ROWS = 30
-NUM_COLS = 30
+NUM_ROWS = 40
+NUM_COLS = 40
 DECIMAL_PRECISION = 20
 
 # Shift 20 places to get from float representation to int representation

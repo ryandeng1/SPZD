@@ -57,8 +57,8 @@ using namespace std;
 
 using json = nlohmann::json;
 
-const int NUM_ROWS = 30;
-const int NUM_COLUMNS = 30;
+const int NUM_ROWS = 40;
+const int NUM_COLUMNS = 40;
 
 // Send the private inputs masked with a random value.
 // Receive shares of a preprocessed triple from each SPDZ engine, combine and check the triples are valid.
