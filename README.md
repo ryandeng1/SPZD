@@ -1,3 +1,7 @@
+**Notice:** This software is not under active development any more. There are two successor projects:
+- [SCALE-MAMBA](https://github.com/KULeuven-COSIC/SCALE-MAMBA) aims to provide an integrated framework for computation in prime order fields with both dishonest and honest majority.
+- [MP-SPDZ](https://github.com/n1analytics/MP-SPDZ) aims to provide benchmarking of various protocols while preserving all the functionality of SPDZ-2.
+
 (C) 2018 University of Bristol. See License.txt
 
 Software for the SPDZ, MASCOT, and Overdrive secure multi-party computation protocols.
@@ -27,7 +31,7 @@ In particular, the online phase will discard preprocessed data and crash when it
 
 1) Edit `CONFIG` or `CONFIG.mine` to your needs:
 
- - To benchmark only the online phase (skipping the secure offline phase), add the following line at the top: `MY_CFLAGS = -DINSECURE`
+ - To benchmark the online phase while skipping the secure offline phase, or to benchmark any of the Overdrive offline phases, add the following line at the top: `MY_CFLAGS = -DINSECURE`
  - `PREP_DIR` should point to should be a local, unversioned directory to store preprocessing data (default is `Player-Data` in the current directory).
  - For the SPDZ-2 and Overdrive offline phases, set `USE_NTL = 1` and `MOD = -DMAX_MOD_SZ=6`.
  - For the MASCOT offline phase or to use GF(2^128) in the online phase, set `USE_GF2N_LONG = 1`.
@@ -166,3 +170,7 @@ These programs can be run similarly to `spdz2-offline.x`, for example:
 `host2:$ ./simple-offline.x -p 1 -h host1`
 
 Running any program without arguments describes all command-line arguments.
+
+##### Memory usage
+
+Lattice-based ciphertexts are relatively large (in the order of megabytes), and the zero-knowledge proofs we use require storing some hundred of them. You must therefore expect to use at least some hundred megabytes of memory per thread. The memory usage is linear in `MAX_MOD_SZ` (determining the maximum integer size for computations in steps of 64 bits), so you can try to reduce it (see the compilation section for how set it). For some choices of parameters, 4 is enough while others require up to 8. The programs above indicate the minimum `MAX_MOD_SZ` required, and they fail during the parameter generation if it is too low.
