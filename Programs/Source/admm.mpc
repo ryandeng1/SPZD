@@ -6,7 +6,7 @@ from Compiler.types import sint, regint, Array, MemValue
 from Compiler.instructions import listen, acceptclientconnection
 from Compiler.library import print_ln, do_while, for_range
 from Compiler.util import if_else
-NUM_ROWS = 100
+#NUM_ROWS = 100
 NUM_COLS = 20
 DECIMAL_PRECISION = 20
 
@@ -157,7 +157,7 @@ def admm_local(XXinv, Xy, u, z, rho, l):
 	def loop_body(i):
 		print_ln("%s", second_term[i].reveal())
 	"""
-	w = multiply_matrices(XXinv, second_term, NUM_ROWS, NUM_COLS, NUM_ROWS, 1)
+	w = multiply_matrices(XXinv, second_term, NUM_COLS, NUM_COLS, NUM_COLS, 1)
 	"""
 	print_ln("%s", "ey it's w again wow wtf")
 	@for_range(len(w))
@@ -175,7 +175,7 @@ def get_new_w(XXinv_cache, Xy_cache, u_list, z, rho, l):
 	w_list = sfixArray(nparties * NUM_COLS)
 	@for_range(nparties)
 	def loop_body(i):
-		XXinv = get_ith_matrix(XXinv_cache, i, NUM_ROWS*NUM_COLS)
+		XXinv = get_ith_matrix(XXinv_cache, i, NUM_COLS*NUM_COLS)
 		Xy = get_ith_matrix(Xy_cache, i, NUM_COLS)
 		u = get_ith_matrix(u_list, i, NUM_COLS)
 		w_new = admm_local(XXinv, Xy, u, z, rho, l)
