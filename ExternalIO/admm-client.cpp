@@ -271,10 +271,10 @@ int main(int argc, char** argv) {
 
     //Shift all numbers over by 20 bits
     int numShift = 20;
-/*
+
     string host_names[] = {"ec2-52-39-162-238.us-west-2.compute.amazonaws.com", "ec2-34-223-215-198.us-west-2.compute.amazonaws.com", "ec2-23-20-124-131.compute-1.amazonaws.com", "ec2-52-73-142-253.compute-1.amazonaws.com"};
-*/
-    string host_names[] = {"localhost", "localhost", "localhost", "localhost"};
+
+//    string host_names[] = {"localhost", "localhost", "localhost", "localhost"};
     if (argc < 1) {
         cout << "Please provide client id" << endl;
         exit(0);
