@@ -216,13 +216,13 @@ vector<gfp> readMatrix(string file_name, double rho, int finish, int numShift, i
 
     
     MatrixXd XTX = transpose * data_matrix;
-    MatrixXd identity = MatrixXd::Identity(NUM_ROWS, NUM_COLUMNS);
+    MatrixXd identity = MatrixXd::Identity(NUM_COLUMNS, NUM_COLUMNS);
     MatrixXd rho_identity = rho * identity;
     MatrixXd XTX_rhoI = XTX + rho_identity;
     MatrixXd inverse = XTX_rhoI.inverse();
     MatrixXd XTy = transpose * y;
-
-
+    cout << "Inverse " << endl;
+    cout << inverse << endl;
     // Put values into vector to send to server 
     vector<gfp> values;
     values.push_back(5);
@@ -274,6 +274,7 @@ int main(int argc, char** argv) {
 
     string host_names[] = {"ec2-52-39-162-238.us-west-2.compute.amazonaws.com", "ec2-34-223-215-198.us-west-2.compute.amazonaws.com", "ec2-23-20-124-131.compute-1.amazonaws.com", "ec2-52-73-142-253.compute-1.amazonaws.com"};
 
+//    string host_names[] = {"localhost", "localhost", "localhost", "localhost"};
     if (argc < 1) {
         cout << "Please provide client id" << endl;
         exit(0);
@@ -283,7 +284,8 @@ int main(int argc, char** argv) {
     finish = 5;
     string file_name = argv[1];
     int nparties = atoi(argv[2]);
-    int dim = atoi(argv[3]);
+    int rows = atoi(argv[3]);
+    int cols = atoi(argv[4]);
     // init static gfp
     string prep_data_prefix = get_prep_dir(nparties, 128, 128);
     initialise_fields(prep_data_prefix);
@@ -291,12 +293,7 @@ int main(int argc, char** argv) {
     
     
     double rho = 0.01;
-    vector<gfp> values = readMatrix(file_name, rho, finish, numShift, dim, dim);
-    /*
-    for (unsigned int i = 0; i < values.size(); i++) {
-        cout << values[i] << " , " << endl;
-    }
-    */
+    vector<gfp> values = readMatrix(file_name, rho, finish, numShift, rows, cols);
     cout << "Successfully read matrix" << endl;
 
 
@@ -316,7 +313,7 @@ int main(int argc, char** argv) {
     cout << "Sent private inputs to each SPDZ engine, waiting for result..." << endl;
 
     // Get the result back (client_id of winning client)
-    vector<double> result = receive_result(sockets, nparties, dim);
+    vector<double> result = receive_result(sockets, nparties, cols);
 
 
     duration = (clock() - start ) / (double) CLOCKS_PER_SEC;
