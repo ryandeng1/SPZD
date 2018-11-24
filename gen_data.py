@@ -25,10 +25,9 @@ def main():
 	n = int(sys.argv[1])
 	d = int(sys.argv[2])
 	seed = 50
-	for i in range(1, NUM_PARTIES + 1):
-		(w, x, y) = make_data(n, d, seed=seed)
-		seed += 1
-		d_ = {"x": x.flatten().tolist(), "y":y.flatten().tolist()}
+	(w, x, y) = make_data(n * NUM_PARTIES, d, seed=seed)
+	for i in range(0, NUM_PARTIES):
+		d_ = {"x": x[i * n:(i+1)*n].flatten().tolist(), "y":y[i*n:(i+1)*n].flatten().tolist(), "w":w.flatten().tolist()}
 		with open('data' + str(i) + '.json', 'w') as outfile:
 			json.dump(d_, outfile)
 
