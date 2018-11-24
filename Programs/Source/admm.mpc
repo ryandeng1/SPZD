@@ -69,8 +69,8 @@ def soft_threshold_vec(th, vec):
 def admm_coordinate(w_list, u_list, z, rho, l):
 	d = NUM_COLS
 	nparties = MAX_NUM_CLIENTS
-	w_avg = sfixArray(NUM_ROWS)
-	u_avg = sfixArray(NUM_ROWS)
+	w_avg = sfixArray(d)
+	u_avg = sfixArray(d)
 	@for_range(d)
 	def loop_body(i):
 		w_avg[i] = sfix(0)
@@ -131,11 +131,11 @@ def admm_coordinate(w_list, u_list, z, rho, l):
 		neg_z[j] = - 1 * z_new[j]
 	@for_range(nparties)
 	def loop_body(i):
-		u_i = get_ith_matrix(u_list, i, NUM_ROWS)
-		w_i = get_ith_matrix(w_list, i, NUM_ROWS)
+		u_i = get_ith_matrix(u_list, i, NUM_COLS)
+		w_i = get_ith_matrix(w_list, i, NUM_COLS)
 		intermediate_vec = add_matrices(u_i, w_i)
 		sum_vec = add_matrices(intermediate_vec, neg_z)
-		copy_ith_matrix(u_list_new, sum_vec, i, NUM_ROWS)
+		copy_ith_matrix(u_list_new, sum_vec, i, NUM_COLS)
 	return (u_list_new, z_new)
 
 
@@ -172,14 +172,14 @@ def get_new_w(XXinv_cache, Xy_cache, u_list, z, rho, l):
 	def loop(i):
 		print_ln("%s", u_list[i].reveal())
 	nparties = MAX_NUM_CLIENTS
-	w_list = sfixArray(nparties * NUM_ROWS)
+	w_list = sfixArray(nparties * NUM_COLS)
 	@for_range(nparties)
 	def loop_body(i):
 		XXinv = get_ith_matrix(XXinv_cache, i, NUM_ROWS*NUM_COLS)
 		Xy = get_ith_matrix(Xy_cache, i, NUM_COLS)
 		u = get_ith_matrix(u_list, i, NUM_COLS)
 		w_new = admm_local(XXinv, Xy, u, z, rho, l)
-		copy_ith_matrix(w_list, w_new, i, NUM_ROWS)
+		copy_ith_matrix(w_list, w_new, i, NUM_COLS)
 
 	return w_list
 
