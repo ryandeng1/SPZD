@@ -6,15 +6,15 @@ from Compiler.types import sint, regint, Array, MemValue
 from Compiler.instructions import listen, acceptclientconnection
 from Compiler.library import print_ln, do_while, for_range
 from Compiler.util import if_else
-NUM_ROWS = 70
-NUM_COLS = 70
+NUM_ROWS = 100
+NUM_COLS = 20
 DECIMAL_PRECISION = 20
 
 # Shift 20 places to get from float representation to int representation
 FP_FACTOR = 20
 sfix.set_precision(FP_FACTOR, 40)
 cfix.set_precision(FP_FACTOR, 40)
-MAX_NUM_CLIENTS = 4
+MAX_NUM_CLIENTS = 2
 PORTNUM = 14000
 rho = 0.01
 l = 0.008
@@ -275,17 +275,17 @@ def accept_client_input():
 	client_socket_id = regint()
 	acceptclientconnection(client_socket_id, PORTNUM)
 	print_ln("Received Client Input!")
-	client_inputs = sint.receive_from_client(1 + NUM_ROWS * NUM_COLS + NUM_ROWS, client_socket_id)
+	client_inputs = sint.receive_from_client(1 + NUM_COLS * NUM_COLS + NUM_COLS, client_socket_id)
 	finish = client_inputs[0]
-	XX_inv = sfixArray(NUM_ROWS * NUM_COLS)
+	XX_inv = sfixArray(NUM_COLS * NUM_COLS)
 	print_ln("%s", "Getting input")
-	for i in range(1, NUM_ROWS * NUM_COLS + 1):
+	for i in range(1, NUM_COLS * NUM_COLS + 1):
 		x = sfix(client_inputs[i])
 		XX_inv[i - 1] = x
 
-	Xy = sfixArray(NUM_ROWS)
-	for i in range(NUM_ROWS):
-		x = sfix(client_inputs[i + 1 + NUM_ROWS * NUM_COLS])
+	Xy = sfixArray(NUM_COLS)
+	for i in range(NUM_COLS):
+		x = sfix(client_inputs[i + 1 + NUM_COLS * NUM_COLS])
 		Xy[i] = x
 
 	return XX_inv, Xy, client_socket_id, finish
@@ -293,8 +293,8 @@ def accept_client_input():
 def main():
 	listen(PORTNUM)
 	print_ln('Listening for client connections on base port %s', PORTNUM)
-	XXinv_cache = sfixArray(MAX_NUM_CLIENTS * NUM_ROWS * NUM_COLS)
-	Xy_cache = sfixArray(MAX_NUM_CLIENTS * NUM_ROWS)
+	XXinv_cache = sfixArray(MAX_NUM_CLIENTS * NUM_COLS * NUM_COLS)
+	Xy_cache = sfixArray(MAX_NUM_CLIENTS * NUM_COLS)
 	client_sockets = Array(MAX_NUM_CLIENTS, regint)
 	number_clients = MemValue(regint(0))
 	XXinv_index = MemValue(regint(0))
