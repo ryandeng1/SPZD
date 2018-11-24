@@ -7,7 +7,7 @@ from Compiler.instructions import listen, acceptclientconnection
 from Compiler.library import print_ln, do_while, for_range
 from Compiler.util import if_else
 #NUM_ROWS = 100
-NUM_COLS = 20
+NUM_COLS = 10
 DECIMAL_PRECISION = 20
 
 # Shift 20 places to get from float representation to int representation
@@ -282,7 +282,6 @@ def accept_client_input():
 	for i in range(1, NUM_COLS * NUM_COLS + 1):
 		x = sfix(client_inputs[i])
 		XX_inv[i - 1] = x
-
 	Xy = sfixArray(NUM_COLS)
 	for i in range(NUM_COLS):
 		x = sfix(client_inputs[i + 1 + NUM_COLS * NUM_COLS])
