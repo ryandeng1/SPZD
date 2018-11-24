@@ -57,8 +57,8 @@ using namespace std;
 
 using json = nlohmann::json;
 
-const int NUM_ROWS = 70;
-const int NUM_COLUMNS = 70;
+//const int NUM_ROWS = 50;
+//const int NUM_COLUMNS = 50;
 
 // Send the private inputs masked with a random value.
 // Receive shares of a preprocessed triple from each SPDZ engine, combine and check the triples are valid.
@@ -155,7 +155,7 @@ gfp receive_one_result(vector<int>& sockets, int nparties)
 }
 
 
-vector<double> receive_result(vector<int>& sockets, int nparties)
+vector<double> receive_result(vector<int>& sockets, int nparties, int NUM_COLUMNS)
 {
     cout << "Receiving matrix" << endl;
     vector<double> output_values(NUM_COLUMNS);    
@@ -191,7 +191,7 @@ vector<double> receive_result(vector<int>& sockets, int nparties)
 }
 
 
-vector<gfp> readMatrix(string file_name, double rho, int finish, int numShift) {
+vector<gfp> readMatrix(string file_name, double rho, int finish, int numShift, int NUM_ROWS, int NUM_COLUMNS) {
     cout << "Reading matrix" << endl;
     cout << finish << endl;
     std::ifstream i(file_name);
@@ -266,7 +266,7 @@ int main(int argc, char** argv) {
     clock_t start;
     double duration;
     int port_base = 14000;
-    int nparties = 4;
+    //int nparties = 2;
     int finish;
 
     //Shift all numbers over by 20 bits
@@ -282,7 +282,8 @@ int main(int argc, char** argv) {
 
     finish = 5;
     string file_name = argv[1];
-
+    int nparties = atoi(argv[2]);
+    int dim = atoi(argv[3]);
     // init static gfp
     string prep_data_prefix = get_prep_dir(nparties, 128, 128);
     initialise_fields(prep_data_prefix);
@@ -290,7 +291,7 @@ int main(int argc, char** argv) {
     
     
     double rho = 0.01;
-    vector<gfp> values = readMatrix(file_name, rho, finish, numShift);
+    vector<gfp> values = readMatrix(file_name, rho, finish, numShift, dim, dim);
     /*
     for (unsigned int i = 0; i < values.size(); i++) {
         cout << values[i] << " , " << endl;
@@ -315,7 +316,7 @@ int main(int argc, char** argv) {
     cout << "Sent private inputs to each SPDZ engine, waiting for result..." << endl;
 
     // Get the result back (client_id of winning client)
-    vector<double> result = receive_result(sockets, nparties);
+    vector<double> result = receive_result(sockets, nparties, dim);
 
 
     duration = (clock() - start ) / (double) CLOCKS_PER_SEC;
