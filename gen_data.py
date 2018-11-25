@@ -28,7 +28,7 @@ def main():
 	(w, x, y) = make_data(n * NUM_PARTIES, d, seed=seed)
 	for i in range(0, NUM_PARTIES):
 		d_ = {"x": x[i * n:(i+1)*n].flatten().tolist(), "y":y[i*n:(i+1)*n].flatten().tolist(), "w":w.flatten().tolist()}
-		with open('data' + str(i) + '.json', 'w') as outfile:
+		with open('data' + str(i+1) + '.json', 'w') as outfile:
 			json.dump(d_, outfile)
 
 
