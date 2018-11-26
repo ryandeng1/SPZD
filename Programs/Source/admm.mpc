@@ -7,14 +7,14 @@ from Compiler.instructions import listen, acceptclientconnection
 from Compiler.library import print_ln, do_while, for_range
 from Compiler.util import if_else
 #NUM_ROWS = 100
-NUM_COLS = 10
+NUM_COLS = 50
 #DECIMAL_PRECISION = 20
 
 # Shift 20 places to get from float representation to int representation
 FP_FACTOR = 20
 sfix.set_precision(FP_FACTOR, 40)
 cfix.set_precision(FP_FACTOR, 40)
-MAX_NUM_CLIENTS = 2
+MAX_NUM_CLIENTS = 4
 PORTNUM = 14000
 rho = 0.01
 l = 0.008
