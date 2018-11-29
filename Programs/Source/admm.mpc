@@ -1,15 +1,12 @@
 # (C) 2018 University of Bristol. See License.txt
 import sys
-sys.setrecursionlimit(4500)
 import time
 from Compiler.types import sint, regint, Array, MemValue
 from Compiler.instructions import listen, acceptclientconnection
 from Compiler.library import print_ln, do_while, for_range
 from Compiler.util import if_else
 from Compiler import library
-#NUM_ROWS = 100
-NUM_COLS = 50
-#DECIMAL_PRECISION = 20
+NUM_COLS = 10
 
 # Shift 20 places to get from float representation to int representation
 FP_FACTOR = 20
@@ -17,8 +14,10 @@ sfix.set_precision(FP_FACTOR, 40)
 cfix.set_precision(FP_FACTOR, 40)
 MAX_NUM_CLIENTS = 4
 PORTNUM = 14000
+# Hyperparameters, l is the lambda used in Lasso
 rho = 0.01
 l = 0.008
+# Number of iterations for admm
 admm_iter = 10
 
 
@@ -43,14 +42,6 @@ def soft_threshold_vec(th, vec):
     print_ln("%s", "In the soft threshold function now")
     @for_range(len(vec))
     def loop_body(i):
-    	"""
-    	mem_th = MemFix(sfix(0))
-    	mem_v = MemFix(sfix(0))
-    	mem_th_neg = MemFix(sfix(0))
-    	mem_th.write(th)
-    	mem_v.write(vec[i])
-    	mem_th_neg.write(sfix(-1) * th)
-    	"""
     	v = vec[i]
     	neg_th = -1 * th
     	#print_ln("%s %s %s", mem_th.read().reveal(), mem_v.read().reveal(), mem_th_neg.read().reveal())
@@ -244,34 +235,29 @@ def add_matrices(left_matrix, right_matrix):
 
 
 def multiply_matrices(left_matrix, right_matrix, num_rows_a, num_cols_a, num_rows_b, num_cols_b):
-  result_matrix = sfixArray(num_rows_a * num_cols_b)
-  @for_range(len(result_matrix))
-  def range_body(i):
-    result_matrix[i] = sfix(0)
-  @for_range(num_rows_a)
-  def range_body(i):
-    @for_range(num_cols_b)
-    def range_body(j):
-     k = sint(0)
-     @for_range(num_rows_b)
-     def range_body(k):
-       k = k +  left_matrix[i * num_cols_a + k].v * right_matrix[k * num_cols_b + j].v
-       #result_matrix[i * num_cols_b + j] += left_matrix[i * num_cols_a + k] * right_matrix[k * num_cols_b + j]
-     temp = sfix(0)
-     temp.load_sint(k)
-     result_matrix[i * num_cols_b + j] = temp
-  return result_matrix
+	result_matrix = sfixArray(num_rows_a * num_cols_b)
+	@for_range(len(result_matrix))
+	def range_body(i):
+		result_matrix[i] = sfix(0)
+	@for_range(num_rows_a)
+	def range_body(i):
+		@for_range(num_cols_b)
+		def range_body(j):
+     		@for_range(num_rows_b)
+     		def range_body(k):
+     			result_matrix[i * num_cols_b + j] += left_matrix[i * num_cols_a + k] * right_matrix[k * num_cols_b + j]
+     return result_matrix
   
 
 
 def send_weights_to_clients(sockets, number_clients, weights):
-  rnd_from_triple = sint.get_random_triple()[0]
-  @for_range(NUM_COLS)
-  def loop_body(i):
-   @for_range(number_clients)
-   def loop_body(j): 
-    auth_result = weights[i] * rnd_from_triple
-    sint.write_shares_to_socket(sockets[j], [weights[i], rnd_from_triple, auth_result])
+	rnd_from_triple = sint.get_random_triple()[0]
+	@for_range(NUM_COLS)
+	def loop_body(i):
+		@for_range(number_clients)
+		def loop_body(j): 
+			auth_result = weights[i] * rnd_from_triple
+			sint.write_shares_to_socket(sockets[j], [weights[i], rnd_from_triple, auth_result])
 
 
 
@@ -329,6 +315,5 @@ def main():
 
 	send_weights_to_clients(client_sockets, MAX_NUM_CLIENTS, new_weights)
 	end = time.time()
-	print_ln("%s", "Finding weights took {0} many seconds".format(str(end - start)))	
 
 main()
