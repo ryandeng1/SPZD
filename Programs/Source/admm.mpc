@@ -243,10 +243,10 @@ def multiply_matrices(left_matrix, right_matrix, num_rows_a, num_cols_a, num_row
 	def range_body(i):
 		@for_range(num_cols_b)
 		def range_body(j):
-     		@for_range(num_rows_b)
-     		def range_body(k):
-     			result_matrix[i * num_cols_b + j] += left_matrix[i * num_cols_a + k] * right_matrix[k * num_cols_b + j]
-     return result_matrix
+	     		@for_range(num_rows_b)
+     			def range_body(k):
+     				result_matrix[i * num_cols_b + j] += left_matrix[i * num_cols_a + k] * right_matrix[k * num_cols_b + j]
+	return result_matrix
   
 
 
