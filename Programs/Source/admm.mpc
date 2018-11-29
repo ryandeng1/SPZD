@@ -6,6 +6,7 @@ from Compiler.types import sint, regint, Array, MemValue
 from Compiler.instructions import listen, acceptclientconnection
 from Compiler.library import print_ln, do_while, for_range
 from Compiler.util import if_else
+from Compiler import library
 #NUM_ROWS = 100
 NUM_COLS = 50
 #DECIMAL_PRECISION = 20
@@ -251,9 +252,14 @@ def multiply_matrices(left_matrix, right_matrix, num_rows_a, num_cols_a, num_row
   def range_body(i):
     @for_range(num_cols_b)
     def range_body(j):
-      @for_range(num_rows_b)
-      def range_body(k):
-        result_matrix[i * num_cols_b + j] += left_matrix[i * num_cols_a + k] * right_matrix[k * num_cols_b + j]
+     k = sint(0)
+     @for_range(num_rows_b)
+     def range_body(k):
+       k = k +  left_matrix[i * num_cols_a + k].v * right_matrix[k * num_cols_b + j].v
+       #result_matrix[i * num_cols_b + j] += left_matrix[i * num_cols_a + k] * right_matrix[k * num_cols_b + j]
+     temp = sfix(0)
+     temp.load_sint(k)
+     result_matrix[i * num_cols_b + j] = temp
   return result_matrix
   
 
