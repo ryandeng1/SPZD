@@ -1,0 +1,103 @@
+from Compiler.types import sint, regint, Array, MemValue
+from Compiler.instructions import listen, acceptclientconnection
+from Compiler.library import print_ln, do_while, for_range
+from Compiler.util import if_else
+from Compiler import library
+import random
+import gmpy2
+
+
+nparties = 4
+prime_length = 128
+PORTNUM = 14000
+
+
+
+
+# n and g are public keys for Paillier, lambda and mu are secret keys in Paillier.
+def keygen(prime_length):
+	p, q = get_prime_pair(prime_length)
+	n = p * q
+	g = n + 1
+	lambda = (p - 1) * (q - 1)
+	mu = inverse(lambda, n) % n
+	return n, g, lambda, mu
+
+
+# Split the secret keys among n parties using Secret sharing???
+def split_secret_key(n, g, lambda, mu):
+    shares_lambda = Array(nparties, sint)
+    shares_mu = Array(nparties, sint)
+    sum_lambda = sint(0)
+    sum_mu = sint(0)
+
+
+    # First party has secret lambda + random_num 
+    ran_lambda = sint.get_random_triple(prime_length) % n
+    ran_mu = sint.get_random_triple(prime_length) % n
+    shares_lambda[0] = (lambda + ran_lambda) % n
+    shares_mu[0] = (mu + ran_mu) % n
+    sum_lambda += ran_lambda
+    sum_mu += ran_mu
+
+    # Parties 2 to n-1 have a random secret
+    @for_range(2, nparties - 1):
+    def loop_body(i):
+        ran_lambda = sint.get_random_triple(prime_length) % n
+        ran_mu = sint.get_random_triple(prime_length) % n
+        sum_lambda += ran_lambda
+        sum_mu += ran_mu
+        shares_lambda[i] = ran_lambda
+        shares_mu[i] = ran_mu
+
+
+    # Last party gets share that is the negative of the previous sum
+    shares_lambda[nparties - 1] = (-sum_lambda) % n
+    shares_mu[nparties - 1] = (-sum_mu) % n
+
+    return shares_lambda, shares_mu
+
+def get_prime(N):
+    randfunc = random.SystemRandom()
+    r = gmpy2.mpz(randfunc.getrandbits(N))
+    r = gmpy2.bit_set(r, N - 1)
+    return sint(gmpy2.next_prime(r))
+
+
+def get_prime_pair(prime_length):
+	p = get_prime(prime_length)
+	q = p
+	while q == p:
+		q = get_prime(prime_length)
+		print_ln("%s", "One iteration in which q = p")
+
+	return p, q
+
+
+# Finds inverse of a mod b
+def inverse(a, b):
+	r, s, _ = extended_euclidean_algorithm(a, b)
+	if r != 1:
+    	raise ZeroDivisionError('invert() no inverse exists')
+    return s % b
+
+
+
+def extended_euclidean_algorithm(a, b):
+    """Extended Euclidean algorithm
+    Returns r, s, t such that r = s*a + t*b and r is gcd(a, b)
+    See <https://en.wikipedia.org/wiki/Extended_Euclidean_algorithm>
+    """
+    r0, r1 = a, b
+    s0, s1 = sint(1), sint(0)
+    t0, t1 = sint(0), sint(1)
+    while r1 != 0:
+        q = r0 // r1
+        r0, r1 = r1, r0 - q*r1
+        s0, s1 = s1, s0 - q*s1
+        t0, t1 = t1, t0 - q*t1
+    return r0, s0, t0
+
+# Write public keys to files, write shares of private keys to files as well
+def main():
+	return 
