@@ -120,8 +120,99 @@ def extended_euclidean_algorithm(a, b):
         return r1.reveal() == 0
     return r0, s0, t0
 
+
+# Generate a prime of n bits
+def generate_prime(n, num_bits):
+    num_iterations = 100 * n
+    @for_range(num_iterations)
+    def loop_body(i):
+        random_num = cint.get_random_triple()[0]
+        if_then(isPrime(random_num, num_bits) == 1)
+        return random_num
+        end_if()
+
+    print_ln("%s", "No prime generated")
+    return cint(0)
+
+
+# Check if a number is prime or not.
+def isPrime(n, num_bits):
+    if_then(n <= 0)
+    print_ln("Negative number")
+    return 0
+    end_if()
+    lowPrimes =  [3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97
+                   ,101,103,107,109,113,127,131,137,139,149,151,157,163,167,173,179
+                   ,181,191,193,197,199,211,223,227,229,233,239,241,251,257,263,269
+                   ,271,277,281,283,293,307,311,313,317,331,337,347,349,353,359,367
+                   ,373,379,383,389,397,401,409,419,421,431,433,439,443,449,457,461
+                   ,463,467,479,487,491,499,503,509,521,523,541,547,557,563,569,571
+                   ,577,587,593,599,601,607,613,617,619,631,641,643,647,653,659,661
+                   ,673,677,683,691,701,709,719,727,733,739,743,751,757,761,769,773
+                   ,787,797,809,811,821,823,827,829,839,853,857,859,863,877,881,883
+                   ,887,907,911,919,929,937,941,947,953,967,971,977,983,991,997]
+    
+    divides_low_primes = cint(0)
+    for i in range(len(lowPrimes)):
+        if_then(n % cint(lowPrimes[i]) == 0)
+        divides_low_primes.write(1)
+        end_if()
+
+    if_then(divides_low_primes.read() == cint(1))
+    print_ln("%s", "Is a multiple of a low prime")
+    end_if()
+
+    if_then(n >= cint(3) && n&cint(1) != cint(0))
+    return rabinMiller(n, num_bits)
+    end_if()
+
+    return False
+
+
+# Based on https://langui.sh/2009/03/07/generating-very-large-primes/
+def rabinMiller(n, num_bits):
+    mem_n = MemValue(n)
+    s = n - 1
+    t = MemValue(cint(0))
+    @while_do(lambda : s & 1 == 0)
+    def loop_body():
+        mem_n.write(mem_n.read() / n)
+        t.write(t.read() + 1)
+
+    k = MemValue(cint(0))
+    @while_do(lambda : k.read() < 128)
+    def loop_body():
+        ran = cint.get_random_int(num_bits)
+        ran = ran % n
+        val = MemValue(pow(ran, s.read()) % n)
+        if_then(val != cint(1))
+        i = MemValue(cint(0))
+        @while_do(lambda : val != n -1)
+        def loop_body():
+            if_then(i.read() == t - 1)
+            return cint(0)
+            else_then()
+            i.write(i.read() + 1)
+            val.write(pow(val.read(), 2) % n)
+            end_if()
+        end_if()
+        k.write(k.read() + 2)
+    return cint(1)
+
+
+
+
+
+
+
+
 # Write public keys to files, write shares of private keys to files as well
 def main():
+    prime_length = 128
+    num_bits = 7
+    prime = generate_prime(prime_length, num_bits)
+    print_ln("%s", prime)
+    """
     n, g, lam, mu = keygen(prime_length)
     shares_lam, shares_mu = split_secret_key(n, g, lam, mu)
     print_ln("%s", n)
@@ -137,5 +228,6 @@ def main():
     print_ln("%s %s", lam.reveal(), sum_lam.reveal())
     print_ln("%s", "Mu")
     print_ln("%s %s", mu.reveal(), sum_mu.reveal())
+    """
 
 main()
