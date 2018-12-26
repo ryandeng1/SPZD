@@ -121,24 +121,31 @@ def extended_euclidean_algorithm(a, b):
     return r0, s0, t0
 
 
+
+
+
+
+
+
+
 # Generate a prime of n bits
 def generate_prime(n, num_bits):
     num_iterations = 10 * n
     prime = MemValue(cint(0))
     @for_range(num_iterations)
     def loop_body(i):
-	random_num = sint.get_random_triple()[0].reveal() % n
+	random_num = sint.get_random_triple()[0].reveal()
 	if_then(isPrime(random_num, num_bits) == cint(1))
 	prime.write(random_num)
 	print_ln("%s", random_num)
 	end_if()
 	
-    print_ln("%s", "No prime generated")
     return prime
 
 
 # Check if a number is prime or not.
 def isPrime(n, num_bits):
+    print_ln("%s %s", "Prime candidate", n)
     lowPrimes =  [3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97
                    ,101,103,107,109,113,127,131,137,139,149,151,157,163,167,173,179
                    ,181,191,193,197,199,211,223,227,229,233,239,241,251,257,263,269
@@ -153,6 +160,7 @@ def isPrime(n, num_bits):
     divides_low_primes = MemValue(cint(0))
     for i in range(len(lowPrimes)):
         if_then(n % cint(lowPrimes[i]) == 0)
+	print_ln("%s", lowPrimes[i])
         divides_low_primes.write(1)
         end_if()
 
@@ -166,14 +174,14 @@ def isPrime(n, num_bits):
     x = rabinMiller(n, num_bits)
     is_prime.write(x)
     end_if()
-
+    print_ln("Finished isPrime")
     return is_prime.read()
 
 
 # Based on https://langui.sh/2009/03/07/generating-very-large-primes/
 def rabinMiller(n, num_bits):
+    print(type(num_bits))
     is_prime = MemValue(cint(1))
-    print(type(n))
     mem_s = MemValue(cint(n - 1))
     t = MemValue(cint(0))
     @while_do(lambda z: (mem_s.read() & cint(1)) == cint(0), regint(0))
@@ -182,26 +190,32 @@ def rabinMiller(n, num_bits):
         t.write(t.read() + cint(1))
 	return i
     k = MemValue(cint(0))
+    print_ln("%s", "Finished first while loop of rabinMiller")
+    print_ln("%s", "Yo what happened")
     @while_do(lambda i: k.read() < cint(128), regint(0))
     def loop_body(i):
-        ran = sint.get_random_int(num_bits).reveal() % n
+        print_ln("Right before the sandwich")
+        ran = sint.get_random_int(num_bits)
+        print_ln("%s %s", "Random number chosen for primality testing", ran.reveal())
+	ran = ran.reveal()
 	# Should be ran here instead of 2, will have to change later.
         val = MemValue(pow(2, mem_s.read()) % n)
         if_then(val != cint(1))
-        i = MemValue(cint(0))
-        @while_do(lambda j: val != n -1, regint(0))
-        def loop_body(j):
-            if_then(i.read() == t - 1)
+        index = MemValue(cint(0))
+        print_ln("%s", "About to hit inner loop of rabin miller")
+        @while_do(lambda j: val != n - 1, regint(0))
+        def f(j):
+            if_then(index.read() == t - 1)
             is_prime.write(0)
             else_then()
-            i.write(i.read() + 1)
-            val.write(pow(val.read(), 2) % n)
+            index.write(index.read() + 1)
+            val.write((val.read() * val.read()) % n)
             end_if()
 	    return j
         end_if()
         k.write(k.read() + 2)
 	return i
-
+    print_ln("Where is the error")
     return is_prime.read()
 
 
