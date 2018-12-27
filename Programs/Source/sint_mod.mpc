@@ -1,0 +1,21 @@
+print(type(sint(5) < sint(3)))
+# Returns a mod b
+def mod(a, b):
+    result = MemValue(a)
+    mem_a = MemValue(a)
+    @while_do(lambda i: (mem_a.read() > b).reveal(), regint(0))
+    def loop_body(i):
+        mem_a.write(mem_a.read() - b)
+	return i    
+    return mem_a.read()
+
+
+a = sint(32)
+b = sint(15)
+print_ln("%s", mod(a, b).reveal())
+@for_range(10)
+def loop_body(i):
+	print_ln("Hello world")
+
+
+
