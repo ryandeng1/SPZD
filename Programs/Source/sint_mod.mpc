@@ -2,20 +2,19 @@ print(type(sint(5) < sint(3)))
 # Returns a mod b
 # Uses binary search to make things faster
 def mod(a, b):
-	k = MemValue(sint(0))
-	left, right = MemValue(sint(0)), MemValue(a)
-	@while_do(lambda i: (left.read() < right.read()).reveal(), regint(0))
+    left, right = MemValue(sint(0)), MemValue(a)
+    mid = MemValue(sint(0))
+    @while_do(lambda i: (left.read() < right.read()).reveal(), regint(0))
     def loop_body(i):
-    	mid = sint(0)
     	if_then(((left.read() + right.read()) % 2 == sint(0)).reveal())
-    	mid = (left.read() + right.read()) / sint(2)
+    	mid.write((left.read() + right.read()) / sint(2))
     	else_then()
-    	mid = (left.read() + right.read() - sint(1)) / sint(2)
+    	mid.write((left.read() + right.read() - sint(1)) / sint(2))
     	end_if()
-    	if_then((a - m * b >= b).reveal())
-    	left.write(m + sint(1))
+    	if_then((a - mid.read() * b >= b).reveal())
+    	left.write(mid.read() + sint(1))
     	else_then()
-    	right.write(m)
+    	right.write(mid.read())
     	end_if()
     	return i
     return a - left.read() * b

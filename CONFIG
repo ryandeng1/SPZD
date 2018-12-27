@@ -32,7 +32,7 @@ endif
 
 # MAX_MOD_SZ must be at least ceil(len(p)/len(word))
 # Default is 2, which suffices for 128-bit p
-MOD = -DMAX_MOD_SZ=6
+MOD = -DMAX_MOD_SZ=8
 
 LDLIBS = -lmpirxx -lmpir -lsodium $(MY_LDLIBS) -lm -lpthread 
 
