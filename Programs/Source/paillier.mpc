@@ -124,8 +124,40 @@ def extended_euclidean_algorithm(a, b):
 
 
 
+"""
+Raw prime generation. WARNING: VERY PAINFUL
+"""
 
+# Returns a mod n, where a and b are of type sint.
+def mod(a, n):
+    mem_a = MemValue(a)
+    @while_do(lambda i: (mem_a.read() > n).reveal(), regint(0))
+    def loop_body(i):
+        mem_a.write(mem_a.read() - n)
+        return i    
+    return mem_a.read()
 
+# Returns a^b mod n where a, b, n are all of type sint.
+# Assume that b >= 0
+def pow(a, b, n):
+    result = MemValue(a)
+    if_then((b == 0).reveal())
+    result.write(1)
+    else_then()
+    mem_b = MemValue(b)
+    @while_do(lambda i: (mem_b.read() > 0), regint(0))
+    def loop_body(i):
+        if_then((b & 1) == 0)
+        result.write(mod(result.read() * result.read()), n)
+        mem_b.write(mem_b.read() / 2)
+        else_then()
+        mem_b.write(mem_b.read() - 1)
+        result.write(mod(result.read() * a), n)
+        end_if()
+        return i
+
+    end_if()
+    return result.read()
 
 
 # Generate a prime of n bits
