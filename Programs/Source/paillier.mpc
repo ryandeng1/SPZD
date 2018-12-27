@@ -130,7 +130,8 @@ def extended_euclidean_algorithm(a, b):
 
 # Generate a prime of n bits
 def generate_prime(n, num_bits):
-    num_iterations = 10 * n
+    # testing mode, later change to 10 * n
+    num_iterations = 10
     prime = MemValue(cint(0))
     @for_range(num_iterations)
     def loop_body(i):
@@ -191,18 +192,23 @@ def rabinMiller(n, num_bits):
 	return i
     k = MemValue(cint(0))
     print_ln("%s", "Finished first while loop of rabinMiller")
-    print_ln("%s", "Yo what happened")
+    print_ln("%s %s", k.read(), k.read() < cint(128))
+    print_ln("%s %s", "Mem s reads:", mem_s.read())    
     @while_do(lambda i: k.read() < cint(128), regint(0))
     def loop_body(i):
-        print_ln("Right before the sandwich")
+        print_ln("%s", "Right before the sandwich")
         ran = sint.get_random_int(num_bits)
         print_ln("%s %s", "Random number chosen for primality testing", ran.reveal())
-	ran = ran.reveal()
+#	ran = ran.reveal()
 	# Should be ran here instead of 2, will have to change later.
-        val = MemValue(pow(2, mem_s.read()) % n)
+       	
+	val = MemValue(mem_s.read().pow2() % n)
+
         if_then(val != cint(1))
-        index = MemValue(cint(0))
+	index = MemValue(cint(0))
         print_ln("%s", "About to hit inner loop of rabin miller")
+    
+        """
         @while_do(lambda j: val != n - 1, regint(0))
         def f(j):
             if_then(index.read() == t - 1)
@@ -212,6 +218,7 @@ def rabinMiller(n, num_bits):
             val.write((val.read() * val.read()) % n)
             end_if()
 	    return j
+        """
         end_if()
         k.write(k.read() + 2)
 	return i
