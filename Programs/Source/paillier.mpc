@@ -217,11 +217,11 @@ def rabinMiller(n, num_bits):
     is_prime = MemValue(sint(1))
     mem_s = MemValue(sint(n - 1))
     t = MemValue(cint(0))
-    @while_do(lambda z: (mem_s.read() & 2 == sint(0)).reveal(), regint(0))
+    @while_do(lambda z: (mem_s.read() % 2 == sint(0)).reveal(), regint(0))
     def loop_body(i):
         mem_s.write(mem_s.read() / sint(2))
         t.write(t.read() + sint(1))
-	    return i
+	return i
 
     k = MemValue(cint(0))
     @while_do(lambda i: (k.read() < cint(128)), regint(0))
@@ -255,11 +255,11 @@ def generate_prime(n, num_bits):
     prime = MemValue(cint(0))
     @for_range(num_iterations)
     def loop_body(i):
-    random_num = sint.get_random_triple()[0].reveal()
-    if_then(isPrime(random_num, num_bits) == cint(1))
-    prime.write(random_num)
-    print_ln("%s", random_num)
-    end_if()
+        random_num = sint.get_random_triple()[0].reveal()
+        if_then(isPrime(random_num, num_bits) == cint(1))
+        prime.write(random_num)
+        print_ln("%s", random_num)
+        end_if()
     return prime
 
 
