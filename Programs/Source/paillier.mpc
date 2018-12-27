@@ -127,7 +127,7 @@ def extended_euclidean_algorithm(a, b):
 """
 Raw prime generation. WARNING: VERY PAINFUL
 """
-
+"""
 # Returns a mod n, where a and b are of type sint.
 def smod(a, n):
     mem_a = MemValue(a)
@@ -136,6 +136,25 @@ def smod(a, n):
         mem_a.write(mem_a.read() - n)
         return i    
     return mem_a.read()
+"""
+def smod(a, b):
+    k = MemValue(sint(0))
+    left, right = MemValue(sint(0)), MemValue(a)
+    @while_do(lambda i: (left.read() < right.read()).reveal(), regint(0))
+    def loop_body(i):
+        mid = sint(0)
+        if_then(((left.read() + right.read()) % 2 == sint(0)).reveal())
+        mid = (left.read() + right.read()) / sint(2)
+        else_then()
+        mid = (left.read() + right.read() - sint(1)) / sint(2)
+        end_if()
+        if_then((a - m * b >= b).reveal())
+        left.write(m + sint(1))
+        else_then()
+        right.write(m)
+        end_if()
+        return i
+    return a - left.read() * b
 
 # Returns a^b mod n where a, b, n are all of type sint.
 # Assume that b >= 0
