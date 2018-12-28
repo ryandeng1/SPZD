@@ -138,20 +138,19 @@ def smod(a, n):
     return mem_a.read()
 """
 def smod(a, b):
-    k = MemValue(sint(0))
     left, right = MemValue(sint(0)), MemValue(a)
+    mid = MemValue(sint(0))
     @while_do(lambda i: (left.read() < right.read()).reveal(), regint(0))
     def loop_body(i):
-        mid = sint(0)
         if_then(((left.read() + right.read()) % 2 == sint(0)).reveal())
-        mid = (left.read() + right.read()) / sint(2)
+        mid.write((left.read() + right.read()) / sint(2))
         else_then()
-        mid = (left.read() + right.read() - sint(1)) / sint(2)
+        mid.write((left.read() + right.read() - sint(1)) / sint(2))
         end_if()
-        if_then((a - m * b >= b).reveal())
-        left.write(m + sint(1))
+        if_then((a - mid.read() * b >= b).reveal())
+        left.write(mid.read() + sint(1))
         else_then()
-        right.write(m)
+        right.write(mid.read())
         end_if()
         return i
     return a - left.read() * b
@@ -163,9 +162,11 @@ def spow(a, b, n):
     mem_b = MemValue(b)
     @while_do(lambda i: (mem_b.read() > 0).reveal(), regint(0))
     def loop_body(i):
+        print_ln("One loop in power")
+        print_ln("%s", b.reveal())
         if_then(((b % 2) == sint(0)).reveal())
         result.write(smod(result.read() * result.read(), n))
-        mem_b.write(mem_b.read() / sint(2))
+        mem_b.write(mem_b.read() >> sint(1))
         else_then()
         mem_b.write(mem_b.read() - sint(1))
         result.write(smod(result.read() * a, n))
@@ -179,8 +180,9 @@ def spow(a, b, n):
 
 # Check if a number is prime or not.
 def isPrime(n, num_bits):
-    print_ln("%s %s", "Prime candidate", n)
-    lowPrimes =  [3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97
+    print_ln("%s %s", "Prime candidate", n.reveal())
+    lowPrimes =  [3,5,7,11,13,17] # ,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97]
+    """
                    ,101,103,107,109,113,127,131,137,139,149,151,157,163,167,173,179
                    ,181,191,193,197,199,211,223,227,229,233,239,241,251,257,263,269
                    ,271,277,281,283,293,307,311,313,317,331,337,347,349,353,359,367
@@ -190,21 +192,22 @@ def isPrime(n, num_bits):
                    ,673,677,683,691,701,709,719,727,733,739,743,751,757,761,769,773
                    ,787,797,809,811,821,823,827,829,839,853,857,859,863,877,881,883
                    ,887,907,911,919,929,937,941,947,953,967,971,977,983,991,997]
-    
-    divides_low_primes = MemValue(cint(0))
+    """
+    divides_low_primes = MemValue(sint(0))
     for i in range(len(lowPrimes)):
-        if_then(n % cint(lowPrimes[i]) == 0)
+        print_ln("%s %s", "Finding low primes iteration ", i)
+        if_then((smod(n, sint(lowPrimes[i])) == sint(0)).reveal())
 	print_ln("%s", lowPrimes[i])
-        divides_low_primes.write(1)
+        divides_low_primes.write(sint(1))
         end_if()
 
-    is_prime = MemValue(cint(0))
-    if_then(divides_low_primes.read() == cint(1))
+    is_prime = MemValue(sint(0))
+    if_then((divides_low_primes.read() == sint(1)).reveal())
     print_ln("%s", "Is a multiple of a low prime")
-    is_prime.write(0)
+    is_prime.write(sint(0))
     end_if()
     
-    if_then((n >= cint(3) and n & cint(1)) != cint(0))
+    if_then(((n >= sint(3) and n % 2 != sint(0)) != sint(0)).reveal())
     x = rabinMiller(n, num_bits)
     is_prime.write(x)
     end_if()
@@ -213,31 +216,33 @@ def isPrime(n, num_bits):
 
 
 # Based on https://langui.sh/2009/03/07/generating-very-large-primes/
+# n is the prime to be tested, num_bits is the number of bits that n has
 def rabinMiller(n, num_bits):
     is_prime = MemValue(sint(1))
     mem_s = MemValue(sint(n - 1))
-    t = MemValue(cint(0))
-    @while_do(lambda z: (mem_s.read() & 2 == sint(0)).reveal(), regint(0))
+    t = MemValue(sint(0))
+    @while_do(lambda z: (mem_s.read() % 2 == sint(0)).reveal(), regint(0))
     def loop_body(i):
         mem_s.write(mem_s.read() / sint(2))
         t.write(t.read() + sint(1))
-	    return i
+	return i
 
     k = MemValue(cint(0))
+    print_ln("%s", "Finished first while loop of miller rabin")
     @while_do(lambda i: (k.read() < cint(128)), regint(0))
     def loop_body(i):
-        ran = sint.get_random_int(num_bits)
-        val = MemValue(pow(ran, mem_s.read(), n))
+        ran = smod(sint.get_random_int(num_bits), n) 
+        val = MemValue(spow(ran, mem_s.read(), n))
         if_then((val != sint(1)).reveal())
-        index = MemValue(cint(0))
+        index = MemValue(sint(0))
         print_ln("%s", "About to hit inner loop of rabin miller")
-        @while_do(lambda j: val != n - 1, regint(0))
+        @while_do(lambda j: (val != n - 1).reveal(), regint(0))
         def f(j):
-            if_then(index.read() == t.read() - 1)
+            if_then((index.read() == t.read() - 1).reveal())
             is_prime.write(sint(0))
             else_then()
             index.write(index.read() + cint(1))
-            val.write(pow(val.read(), sint(2), n))
+            val.write(spow(val.read(), sint(2), n))
             end_if()
             return j
         end_if()
@@ -249,17 +254,17 @@ def rabinMiller(n, num_bits):
 
 
 # Generate a prime of n bits
-def generate_prime(n, num_bits):
+def generate_prime(n):
     # testing mode, later change to 10 * n
     num_iterations = 10
-    prime = MemValue(cint(0))
+    prime = MemValue(sint(0))
     @for_range(num_iterations)
     def loop_body(i):
-    random_num = sint.get_random_triple()[0].reveal()
-    if_then(isPrime(random_num, num_bits) == cint(1))
-    prime.write(random_num)
-    print_ln("%s", random_num)
-    end_if()
+        random_num = sint.get_random_int(n)[0]
+        if_then((isPrime(random_num, n) == sint(1)).reveal())
+        prime.write(random_num)
+        print_ln("%s %s", "Found a prime", random_num.reveal())
+        end_if()
     return prime
 
 
@@ -270,8 +275,8 @@ def generate_prime(n, num_bits):
 def main():
     prime_length = 128
     num_bits = 128
-    prime = generate_prime(prime_length, num_bits)
-    print_ln("%s", prime)
+    prime = generate_prime(prime_length)
+    print_ln("%s", prime.reveal())
 
 main()
 

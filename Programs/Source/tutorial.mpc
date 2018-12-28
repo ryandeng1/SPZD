@@ -56,3 +56,19 @@ a[0] = 789
 end_if()
 
 test(a[0], 789)
+
+
+x = sint(5)
+print_ln("%s", x.reveal())
+
+
+
+x = x.reveal()
+print_ln("%s", x.pow2())
+
+
+
+
+import random
+for i in range(10):
+	print_ln("%s", random.randrange(0, 1000))
