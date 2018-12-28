@@ -1,17 +1,10 @@
 print(type(sint(5) < sint(3)))
 # Returns a mod b
 # Uses binary search to make things faster
-<<<<<<< HEAD
 def smod(a, b):
-	k = MemValue(sint(0))
-	left, right = MemValue(sint(0)), MemValue(a)
-	@while_do(lambda i: (left.read() < right.read()).reveal(), regint(0))
-=======
-def mod(a, b):
     left, right = MemValue(sint(0)), MemValue(a)
     mid = MemValue(sint(0))
     @while_do(lambda i: (left.read() < right.read()).reveal(), regint(0))
->>>>>>> 0823c680cb60442c03fdf7bf87a3b85b791c5ff7
     def loop_body(i):
     	if_then(((left.read() + right.read()) % 2 == sint(0)).reveal())
     	mid.write((left.read() + right.read()) / sint(2))
