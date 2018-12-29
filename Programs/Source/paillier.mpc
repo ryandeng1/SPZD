@@ -127,17 +127,9 @@ def extended_euclidean_algorithm(a, b):
 """
 Raw prime generation. WARNING: VERY PAINFUL
 """
-"""
-# Returns a mod n, where a and b are of type sint.
-def smod(a, n):
-    mem_a = MemValue(a)
-    @while_do(lambda i: (mem_a.read() > n).reveal(), regint(0))
-    def loop_body(i):
-        mem_a.write(mem_a.read() - n)
-        return i    
-    return mem_a.read()
-"""
 def smod(a, b):
+    result = MemValue(sint(a))
+    if_then((a >= b).reveal())
     left, right = MemValue(sint(0)), MemValue(a)
     mid = MemValue(sint(0))
     @while_do(lambda i: (left.read() < right.read()).reveal(), regint(0))
@@ -153,23 +145,32 @@ def smod(a, b):
         right.write(mid.read())
         end_if()
         return i
-    return a - left.read() * b
+    result.write(a - left.read() * b)
+    end_if()
+    print_ln("%s %s %s %s", "A", a.reveal(), "B", b.reveal())
+    print_ln("%s %s", "a mod b", result.read().reveal())
+    return result.read()
+
+
 
 # Returns a^b mod n where a, b, n are all of type sint.
 # Assume that b >= 0
 def spow(a, b, n):
     result = MemValue(sint(1))
     mem_b = MemValue(b)
+    mem_a = MemValue(a)
+    counter = MemValue(cint(0))
     @while_do(lambda i: (mem_b.read() > 0).reveal(), regint(0))
     def loop_body(i):
-        print_ln("One loop in power")
-        print_ln("%s", b.reveal())
-        if_then(((b % 2) == sint(0)).reveal())
-        result.write(smod(result.read() * result.read(), n))
-        mem_b.write(mem_b.read() >> sint(1))
+    counter.write(counter.read() + cint(1))
+    print_ln("%s %s", "spow iteration", counter.read())
+        print_ln("%s %s", "Exponent ", mem_b.read().reveal())
+        if_then(((mem_b.read() % 2) == sint(0)).reveal())
+        mem_a.write(smod(mem_a.read().square(), n))
+        mem_b.write(mem_b.read() / sint(2))
         else_then()
         mem_b.write(mem_b.read() - sint(1))
-        result.write(smod(result.read() * a, n))
+        result.write(smod(result.read() * mem_a.read(), n))
         end_if()
         return i
 
