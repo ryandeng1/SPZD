@@ -114,8 +114,8 @@ def spow(a, b, n):
     factor = floor(reducer * r_inverse - 1, n).reveal()
     converted = smod(reducer, n)
     converted_a = convert_in(reducer_bits, a, n)
-    converted_b = convert_in(reducer_bits, b, n)
-    result =  spow_helper(reducer_bits, reducer, mask, r_inverse, factor, converted, a, b, n)
+    print_ln("%s %s %s %s %s %s", reducer_bits.reveal(), reducer.reveal(), mask.reveal(), r_inverse.reveal(), factor.reveal(), converted.reveal())
+    result =  spow_helper(reducer_bits, reducer, mask, r_inverse, factor, converted, converted_a, b, n)
     return convert_out(r_inverse, result, n)
 
 
@@ -125,7 +125,7 @@ def spow(a, b, n):
 a = sint.get_random_int(128)
 b = sint.get_random_int(128)
 c = sint.get_random_int(128)
-triple = extended_euclidean_algorithm(a, b)
+#triple = extended_euclidean_algorithm(a, b)
 #print_ln("%s %s %s %s %s", a.reveal(), b.reveal(), triple[0].reveal(), triple[1].reveal(), triple[2].reveal())
 
 
