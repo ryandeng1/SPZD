@@ -1,15 +1,20 @@
-program.set_bit_length(257)
+program.set_bit_length(385)
 
 # Finds inverse of a mod b
 def inverse(a, b):
     r, s, _ = extended_euclidean_algorithm(a, b)
-    print(r.reveal())
     """
     if r != 1:
     raise ZeroDivisionError('invert() no inverse exists')
     """
-    return s % b
+    # s % b
+    return smod(s, b) 
     
+
+
+
+
+
 
 # TODO: Work on Extended Euclid's Algorithm to find modular inverse, mainly need the floor function to work.
 def extended_euclidean_algorithm(a, b):
@@ -17,26 +22,24 @@ def extended_euclidean_algorithm(a, b):
     Returns r, s, t such that r = s*a + t*b and r is gcd(a, b)
     See <https://en.wikipedia.org/wiki/Extended_Euclidean_algorithm>
     """
-    r0, r1 = MemValue(sint(0)), MemValue(sint(0))
+    r0, r1 = MemValue(a), MemValue(b)
     s0, s1 = MemValue(sint(1)), MemValue(sint(0))
     t0, t1 = MemValue(sint(0)), MemValue(sint(1))
-    r0.write(a)
-    r1.write(b)
-    @do_while
-    def loop():
-        q = floor(r0, r1)
-        #r0, r1 = r1, r0 - q*r1
-    r0.write(r1)
-    r1.write(r0 - q * r1)
-        #s0, s1 = s1, s0 - q*s1
-    s0.write(s1)
-    s1.write(s0 - q * s1)
-        #t0, t1 = t1, t0 - q*t1
-    t0.write(t1)
-    t1.write(t0 - q * t1)
-        return r1.reveal() == 0
-    return r0, s0, t0
-
+    @while_do(lambda i: (r1.read() != sint(0)).reveal(), regint(0))
+    def loop(i):
+        q = floor(r0.read(), r1.read())
+        temp = MemValue(r0.read())
+        r0.write(r1.read())
+        r1.write(temp.read() - q * r1.read())
+	temp2 = MemValue(s0.read())
+	s0.write(s1.read())
+        s1.write(temp2.read() - q * s1.read())
+	temp3 = MemValue(t0.read())
+        t0.write(t1)
+        t1.write(temp3.read() - q * t1.read())
+	print_ln("%s %s", "r1:", r1.read().reveal())
+        return i
+    return r0.read(), s0.read(), t0.read()
 
 
 # Returns a // b, in which a and b are secret-shared values.
@@ -64,16 +67,68 @@ def floor(a, b):
     print_ln("%s %s", "a // b", result.read().reveal())
     return result.read()
 
-    
+def smod(a, b):
+    fl = floor(a, b)
+    return a - fl * b    
 
-def spow_montgomery(a, b, n):
+def convert_in(reducer_bits, x, n):
+    return smod(x << reducer_bits, n) 
+
+def convert_out(r_inverse, x, n):
+    return smod(r_inverse * x, n)
+
+
+def multiply(reducer_bits, reducer, mask, r_inverse, factor, converted, x, y, n):
+    product = (x * y).reveal()
+    temp = ((product & mask) * factor) & mask
+    reduced = (product + temp * n) >> reducer_bits
+    cond = (reduced < n).reveal()
+    result = cond.if_else(reduced, reduced - n)
+    print(type(result))
+    return result
+
+
+def spow_helper(reducer_bits, reducer, mask, r_inverse, factor, converted, x, y, n):
+    z = MemValue(converted)
+    mem_y = MemValue(y)
+    mem_x = MemValue(x)
+    @while_do(lambda i: (mem_y.read() != sint(0)).reveal(), regint(0))
+    def loop_body(i):
+	print_ln("Hello")
+	if_then((mem_y.read() % 2 != sint(0)).reveal())
+        z.write(multiply(reducer_bits, reducer, mask, r_inverse, factor, converted, z.read(), mem_x.read(), n))
+	end_if()
+	mem_x.write(multiply(reducer_bits, reducer, mask, r_inverse, factor, converted, mem_x.read(), mem_x.read(), n))
+	mem_y.write(mem_y.read() >> sint(1))
+	return i
+    return z.read()
+
+
+
+def spow(a, b, n):
     # first compute r, r must be a power of 2, let r be 16 for now.
-    r = MemValue(sint(16))
+    reducer_bits = sint(136) # (128 // 8 + 1) * 8, here our modulus is 128 bits as we are generating 128 bit primes???
+    reducer = sint(1) << reducer_bits
+    mask = (reducer - sint(1)).reveal()
+    r_inverse = inverse(reducer, n)
+    factor = floor(reducer * r_inverse - 1, n).reveal()
+    converted = smod(reducer, n)
+    converted_a = convert_in(reducer_bits, a, n)
+    converted_b = convert_in(reducer_bits, b, n)
+    result =  spow_helper(reducer_bits, reducer, mask, r_inverse, factor, converted, a, b, n)
+    return convert_out(r_inverse, result, n)
+
+
+
+
 
 a = sint.get_random_int(128)
 b = sint.get_random_int(128)
+c = sint.get_random_int(128)
 triple = extended_euclidean_algorithm(a, b)
-print_ln("%s %s %s %s %s", a.reveal(), b.reveal(), triple[0].reveal(), triple[1].reveal(), triple[2].reveal())
+#print_ln("%s %s %s %s %s", a.reveal(), b.reveal(), triple[0].reveal(), triple[1].reveal(), triple[2].reveal())
 
 
-
+start_timer(1)
+print_ln("%s %s %s %s", a.reveal(), b.reveal(), c.reveal(), spow(a, b, c).reveal())
+stop_timer(1)
