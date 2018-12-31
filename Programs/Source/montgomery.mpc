@@ -1,0 +1,77 @@
+# Finds inverse of a mod b
+def inverse(a, b):
+    r, s, _ = extended_euclidean_algorithm(a, b)
+    print(r.reveal())
+    """
+    if r != 1:
+    raise ZeroDivisionError('invert() no inverse exists')
+    """
+    return s % b
+    
+
+# TODO: Work on Extended Euclid's Algorithm to find modular inverse, mainly need the floor function to work.
+def extended_euclidean_algorithm(a, b):
+    """Extended Euclidean algorithm
+    Returns r, s, t such that r = s*a + t*b and r is gcd(a, b)
+    See <https://en.wikipedia.org/wiki/Extended_Euclidean_algorithm>
+    """
+    r0, r1 = MemValue(sint(0)), MemValue(sint(0))
+    s0, s1 = MemValue(sint(1)), MemValue(sint(0))
+    t0, t1 = MemValue(sint(0)), MemValue(sint(1))
+    r0.write(a)
+    r1.write(b)
+    @do_while
+    def loop():
+        q = floor(r0, r1)
+        #r0, r1 = r1, r0 - q*r1
+    r0.write(r1)
+    r1.write(r0 - q * r1)
+        #s0, s1 = s1, s0 - q*s1
+    s0.write(s1)
+    s1.write(s0 - q * s1)
+        #t0, t1 = t1, t0 - q*t1
+    t0.write(t1)
+    t1.write(t0 - q * t1)
+        return r1.reveal() == 0
+    return r0, s0, t0
+
+
+
+# Returns a // b, in which a and b are secret-shared values.
+def floor(a, b):
+    result = MemValue(sint(0))
+    if_then((a >= b).reveal())
+    left, right = MemValue(sint(0)), MemValue(a)
+    mid = MemValue(sint(0))
+    @while_do(lambda i: (left.read() < right.read()).reveal(), regint(0))
+    def loop_body(i):
+        if_then(((left.read() + right.read()) % 2 == sint(0)).reveal())
+        mid.write((left.read() + right.read()) / sint(2))
+        else_then()
+        mid.write((left.read() + right.read() - sint(1)) / sint(2))
+        end_if()
+        if_then((a - mid.read() * b >= b).reveal())
+        left.write(mid.read() + sint(1))
+        else_then()
+        right.write(mid.read())
+        end_if()
+        return i
+    result.write(left.read())
+    end_if()
+    print_ln("%s %s %s %s", "A", a.reveal(), "B", b.reveal())
+    print_ln("%s %s", "a // b", result.read().reveal())
+    return result.read()
+
+    
+
+def spow_montgomery(a, b, n):
+    # first compute r, r must be a power of 2, let r be 16 for now.
+    r = MemValue(sint(16))
+
+
+a = sint.get_random_int(64)
+b = sint.get_random_int(64)
+print_ln("%s %s %s", a.reveal(), b.reveal(), extended_euclidean_algorithm(a, b).reveal())
+
+
+
