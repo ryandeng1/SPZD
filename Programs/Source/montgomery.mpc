@@ -1,3 +1,5 @@
+program.set_bit_length(257)
+
 # Finds inverse of a mod b
 def inverse(a, b):
     r, s, _ = extended_euclidean_algorithm(a, b)
@@ -68,10 +70,10 @@ def spow_montgomery(a, b, n):
     # first compute r, r must be a power of 2, let r be 16 for now.
     r = MemValue(sint(16))
 
-
-a = sint.get_random_int(64)
-b = sint.get_random_int(64)
-print_ln("%s %s %s", a.reveal(), b.reveal(), extended_euclidean_algorithm(a, b).reveal())
+a = sint.get_random_int(128)
+b = sint.get_random_int(128)
+triple = extended_euclidean_algorithm(a, b)
+print_ln("%s %s %s %s %s", a.reveal(), b.reveal(), triple[0].reveal(), triple[1].reveal(), triple[2].reveal())
 
 
 
