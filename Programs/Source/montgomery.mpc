@@ -75,6 +75,7 @@ def convert_in(reducer_bits, x, n):
     return smod(x << reducer_bits, n) 
 
 def convert_out(r_inverse, x, n):
+    print_ln("%s", (r_inverse * x).reveal())
     return smod(r_inverse * x, n)
 
 
@@ -100,7 +101,9 @@ def spow_helper(reducer_bits, reducer, mask, r_inverse, factor, converted, x, y,
 	end_if()
 	mem_x.write(multiply(reducer_bits, reducer, mask, r_inverse, factor, converted, mem_x.read(), mem_x.read(), n))
 	mem_y.write(mem_y.read() >> sint(1))
+	print_ln("%s", mem_y.read().reveal())
 	return i
+    print_ln("Done with loop")
     return z.read()
 
 
@@ -122,13 +125,12 @@ def spow(a, b, n):
 
 
 
-a = sint.get_random_int(128)
-b = sint.get_random_int(128)
-c = sint.get_random_int(128)
+a = sint()
+b = sint()
+c = sint()
 #triple = extended_euclidean_algorithm(a, b)
 #print_ln("%s %s %s %s %s", a.reveal(), b.reveal(), triple[0].reveal(), triple[1].reveal(), triple[2].reveal())
-
-
+print_ln("%s %s %s", a.reveal(), b.reveal(), c.reveal())
 start_timer(1)
 print_ln("%s %s %s %s", a.reveal(), b.reveal(), c.reveal(), spow(a, b, c).reveal())
 stop_timer(1)
