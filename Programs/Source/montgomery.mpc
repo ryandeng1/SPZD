@@ -68,8 +68,35 @@ def floor(a, b):
     return result.read()
 
 def smod(a, b):
+    result = MemValue(sint(0))
+    if_then((a >= 0).reveal())
     fl = floor(a, b)
-    return a - fl * b    
+    result.write(a - fl * b)    
+    else_then()
+    result.write(smod_neg(a, b))
+    end_if()
+    return result.read()
+
+
+# Used when a is negative
+def smod_neg(a, b):
+    left = MemValue(sint(0))
+    right = MemValue(sint(-1) * a)
+    mid = MemValue(sint(0))
+    @while_do(lambda i: (left.read() < right.read()).reveal(), regint(0))
+    def loop_body(i):
+        mid.write((left + right) >> sint(1))
+	if_then((a + mid.read() * b >= sint(0)).reveal())
+	right.write(mid.read())
+	else_then()
+	left.write(mid.read() + sint(1))
+	end_if()
+	return i
+    return a + left.read() * b
+	
+
+
+
 
 def convert_in(reducer_bits, x, n):
     return smod(x << reducer_bits, n) 
@@ -113,12 +140,14 @@ def spow(a, b, n):
     reducer_bits = sint(136) # (128 // 8 + 1) * 8, here our modulus is 128 bits as we are generating 128 bit primes???
     reducer = sint(1) << reducer_bits
     mask = (reducer - sint(1)).reveal()
-    r_inverse = inverse(reducer, n)
+    r_inverse = inverse(smod(reducer, n), n)
     factor = floor(reducer * r_inverse - 1, n).reveal()
+    print_ln("%s", factor)
     converted = smod(reducer, n)
     converted_a = convert_in(reducer_bits, a, n)
+    converted_b = convert_in(reducer_bits, b, n)
     print_ln("%s %s %s %s %s %s", reducer_bits.reveal(), reducer.reveal(), mask.reveal(), r_inverse.reveal(), factor.reveal(), converted.reveal())
-    result =  spow_helper(reducer_bits, reducer, mask, r_inverse, factor, converted, converted_a, b, n)
+    result =  spow_helper(reducer_bits, reducer, mask, r_inverse, factor, converted, converted_a, converted_b, n)
     return convert_out(r_inverse, result, n)
 
 
@@ -132,6 +161,12 @@ c = sint(221354279714695536125122539251552175179)
 #triple = extended_euclidean_algorithm(a, b)
 #print_ln("%s %s %s %s %s", a.reveal(), b.reveal(), triple[0].reveal(), triple[1].reveal(), triple[2].reveal())
 print_ln("%s %s %s", a.reveal(), b.reveal(), c.reveal())
+
 start_timer(1)
 print_ln("%s %s %s %s", a.reveal(), b.reveal(), c.reveal(), spow(a, b, c).reveal())
 stop_timer(1)
+
+
+
+
+
