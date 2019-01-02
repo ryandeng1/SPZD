@@ -162,9 +162,15 @@ c = sint(221354279714695536125122539251552175179)
 #print_ln("%s %s %s %s %s", a.reveal(), b.reveal(), triple[0].reveal(), triple[1].reveal(), triple[2].reveal())
 print_ln("%s %s %s", a.reveal(), b.reveal(), c.reveal())
 
+# test floor 
+d = sint(7588550360256754183279148073529370729071814602761488244643245601643092331420712959)
+print_ln("%s %s", "FLoor", floor(d, c).reveal())
+
 start_timer(1)
 print_ln("%s %s %s %s", a.reveal(), b.reveal(), c.reveal(), spow(a, b, c).reveal())
 stop_timer(1)
+
+
 
 
 
