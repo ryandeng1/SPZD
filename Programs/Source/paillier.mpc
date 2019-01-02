@@ -3,14 +3,10 @@ from Compiler.instructions import listen, acceptclientconnection
 from Compiler.library import print_ln, do_while, for_range
 from Compiler.util import if_else
 from Compiler import library
-import random
-import gmpy2
 
-
-nparties = 4
 prime_length = 128
 PORTNUM = 14000
-program.set_bit_length(512 - 50)
+program.set_bit_length(420)
 
 
 # n and g are public keys for Paillier, lambda and mu are secret keys in Paillier.
@@ -67,11 +63,6 @@ def inverse(a, b):
     return smod(s, b) 
     
 
-
-
-
-
-
 # TODO: Work on Extended Euclid's Algorithm to find modular inverse, mainly need the floor function to work.
 def extended_euclidean_algorithm(a, b):
     """Extended Euclidean algorithm
@@ -87,13 +78,13 @@ def extended_euclidean_algorithm(a, b):
         temp = MemValue(r0.read())
         r0.write(r1.read())
         r1.write(temp.read() - q * r1.read())
-    temp2 = MemValue(s0.read())
-    s0.write(s1.read())
+        temp2 = MemValue(s0.read())
+	s0.write(s1.read())
         s1.write(temp2.read() - q * s1.read())
-    temp3 = MemValue(t0.read())
+        temp3 = MemValue(t0.read())
         t0.write(t1)
         t1.write(temp3.read() - q * t1.read())
-    print_ln("%s %s", "r1:", r1.read().reveal())
+        #print_ln("%s %s", "r1:", r1.read().reveal())
         return i
     return r0.read(), s0.read(), t0.read()
 
@@ -107,7 +98,7 @@ def floor(a, b):
     @while_do(lambda i: (left.read() < right.read()).reveal(), regint(0))
     def loop_body(i):
         mid.write((left + right) >> sint(1))
-    if_then((a - mid.read() * b - b>= sint(0)).reveal())
+        if_then((a - mid.read() * b - b>= sint(0)).reveal())
         left.write(mid.read() + sint(1))
         else_then()
         right.write(mid.read())
@@ -115,8 +106,6 @@ def floor(a, b):
         return i
     result.write(left.read())
     end_if()
-    print_ln("%s %s %s %s", "A", a.reveal(), "B", b.reveal())
-    print_ln("%s %s", "a // b", result.read().reveal())
     return result.read()
 
 def smod(a, b):
@@ -138,12 +127,12 @@ def smod_neg(a, b):
     @while_do(lambda i: (left.read() < right.read()).reveal(), regint(0))
     def loop_body(i):
         mid.write((left + right) >> sint(1))
-    if_then((a + mid.read() * b >= sint(0)).reveal())
-    right.write(mid.read())
-    else_then()
-    left.write(mid.read() + sint(1))
-    end_if()
-    return i
+        if_then((a + mid.read() * b >= sint(0)).reveal())
+        right.write(mid.read())
+        else_then()
+        left.write(mid.read() + sint(1))
+        end_if()
+        return i
     return a + left.read() * b
     
 
@@ -174,15 +163,15 @@ def spow_helper(reducer_bits, reducer, mask, r_inverse, factor, converted, x, y,
     mem_x = MemValue(x)
     @while_do(lambda i: (mem_y.read() != sint(0)).reveal(), regint(0))
     def loop_body(i):
-    print_ln("Hello")
-    print_ln("%s", mem_y.read().reveal())
-    if_then((mem_y.read() % 2 != sint(0)).reveal())
+        print_ln("Hello")
+        #print_ln("%s", mem_y.read().reveal())
+        if_then((mem_y.read() % 2 != sint(0)).reveal())
         z.write(multiply(reducer_bits, reducer, mask, r_inverse, factor, converted, z.read(), mem_x.read(), n))
-    end_if()
-    mem_x.write(multiply(reducer_bits, reducer, mask, r_inverse, factor, converted, mem_x.read(), mem_x.read(), n))
-    mem_y.write(mem_y.read() >> sint(1))
-    print_ln("%s", z.read().reveal())
-    return i
+        end_if()
+        mem_x.write(multiply(reducer_bits, reducer, mask, r_inverse, factor, converted, mem_x.read(), mem_x.read(), n))
+        mem_y.write(mem_y.read() >> sint(1))
+        #print_ln("%s", z.read().reveal())
+        return i
     print_ln("Done with loop")
     return z.read()
 
@@ -195,10 +184,10 @@ def spow(a, b, n):
     mask = (reducer - sint(1)).reveal()
     r_inverse = inverse(smod(reducer, n), n)
     factor = floor(reducer * r_inverse - 1, n).reveal()
-    print_ln("%s", factor)
+    #print_ln("%s", factor)
     converted = smod(reducer, n)
     converted_a = convert_in(reducer_bits, a, n)
-    print_ln("%s %s %s %s %s %s", reducer_bits.reveal(), reducer.reveal(), mask.reveal(), r_inverse.reveal(), factor.reveal(), converted.reveal())
+    #print_ln("%s %s %s %s %s %s", reducer_bits.reveal(), reducer.reveal(), mask.reveal(), r_inverse.reveal(), factor.reveal(), converted.reveal())
     result =  spow_helper(reducer_bits, reducer, mask, r_inverse, factor, converted, converted_a, b, n)
     return convert_out(r_inverse, result, n)
 
@@ -282,7 +271,7 @@ def rabinMiller(n, num_bits):
 # Generate a prime of n bits
 def generate_prime(n):
     # testing mode, later change to 10 * n
-    num_iterations = 10
+    num_iterations = 1
     prime = MemValue(sint(0))
     @for_range(num_iterations)
     def loop_body(i):
@@ -292,9 +281,6 @@ def generate_prime(n):
         print_ln("%s %s", "Found a prime", random_num.reveal())
         end_if()
     return prime
-
-
-
 
 
 # Write public keys to files, write shares of private keys to files as well
@@ -307,12 +293,3 @@ def main():
 main()
 
 
-"""
-a = sint(3)
-b = sint(5)
-n = sint(23)
-@for_range(10)
-def loop_body(i):
-    print_ln("Hello World")
-print_ln("%s", spow(a, b, n).reveal())
-"""
