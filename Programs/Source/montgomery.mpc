@@ -1,4 +1,4 @@
-program.set_bit_length(385)
+program.set_bit_length(512 - 50)
 
 # Finds inverse of a mod b
 def inverse(a, b):
@@ -50,12 +50,8 @@ def floor(a, b):
     mid = MemValue(sint(0))
     @while_do(lambda i: (left.read() < right.read()).reveal(), regint(0))
     def loop_body(i):
-        if_then(((left.read() + right.read()) % 2 == sint(0)).reveal())
-        mid.write((left.read() + right.read()) / sint(2))
-        else_then()
-        mid.write((left.read() + right.read() - sint(1)) / sint(2))
-        end_if()
-        if_then((a - mid.read() * b >= b).reveal())
+        mid.write((left + right) >> sint(1))
+	if_then((a - mid.read() * b - b>= sint(0)).reveal())
         left.write(mid.read() + sint(1))
         else_then()
         right.write(mid.read())
@@ -123,12 +119,13 @@ def spow_helper(reducer_bits, reducer, mask, r_inverse, factor, converted, x, y,
     @while_do(lambda i: (mem_y.read() != sint(0)).reveal(), regint(0))
     def loop_body(i):
 	print_ln("Hello")
+	print_ln("%s", mem_y.read().reveal())
 	if_then((mem_y.read() % 2 != sint(0)).reveal())
         z.write(multiply(reducer_bits, reducer, mask, r_inverse, factor, converted, z.read(), mem_x.read(), n))
 	end_if()
 	mem_x.write(multiply(reducer_bits, reducer, mask, r_inverse, factor, converted, mem_x.read(), mem_x.read(), n))
 	mem_y.write(mem_y.read() >> sint(1))
-	print_ln("%s", mem_y.read().reveal())
+	print_ln("%s", z.read().reveal())
 	return i
     print_ln("Done with loop")
     return z.read()
@@ -145,9 +142,9 @@ def spow(a, b, n):
     print_ln("%s", factor)
     converted = smod(reducer, n)
     converted_a = convert_in(reducer_bits, a, n)
-    converted_b = convert_in(reducer_bits, b, n)
+#    converted_b = convert_in(reducer_bits, b, n)
     print_ln("%s %s %s %s %s %s", reducer_bits.reveal(), reducer.reveal(), mask.reveal(), r_inverse.reveal(), factor.reveal(), converted.reveal())
-    result =  spow_helper(reducer_bits, reducer, mask, r_inverse, factor, converted, converted_a, converted_b, n)
+    result =  spow_helper(reducer_bits, reducer, mask, r_inverse, factor, converted, converted_a, b, n)
     return convert_out(r_inverse, result, n)
 
 
@@ -163,8 +160,9 @@ c = sint(221354279714695536125122539251552175179)
 print_ln("%s %s %s", a.reveal(), b.reveal(), c.reveal())
 
 # test floor 
-d = sint(7588550360256754183279148073529370729071814602761488244643245601643092331420712959)
-print_ln("%s %s", "FLoor", floor(d, c).reveal())
+#d = sint(7588550360256754183279148073529370729071814602761488244643245601643092331420712959)
+#print_ln("%s %s", "FLoor", floor(d, c).reveal())
+
 
 start_timer(1)
 print_ln("%s %s %s %s", a.reveal(), b.reveal(), c.reveal(), spow(a, b, c).reveal())
