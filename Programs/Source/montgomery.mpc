@@ -127,7 +127,7 @@ def spow(a, b, n):
 
 a = sint(255972849885399187564518654977146894230)
 b = sint(224744354023306270264845723747260911762)
-c = sint(259865479543670276323590689679664023550)
+c = sint(221354279714695536125122539251552175179)
 
 #triple = extended_euclidean_algorithm(a, b)
 #print_ln("%s %s %s %s %s", a.reveal(), b.reveal(), triple[0].reveal(), triple[1].reveal(), triple[2].reveal())
