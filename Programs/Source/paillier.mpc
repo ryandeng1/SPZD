@@ -6,7 +6,7 @@ from Compiler import library
 
 prime_length = 128
 PORTNUM = 14000
-program.set_bit_length(420)
+program.set_bit_length(256)
 
 
 # n and g are public keys for Paillier, lambda and mu are secret keys in Paillier.
@@ -163,23 +163,20 @@ def spow_helper(reducer_bits, reducer, mask, r_inverse, factor, converted, x, y,
     mem_x = MemValue(x)
     @while_do(lambda i: (mem_y.read() != sint(0)).reveal(), regint(0))
     def loop_body(i):
-        print_ln("Hello")
-        #print_ln("%s", mem_y.read().reveal())
         if_then((mem_y.read() % 2 != sint(0)).reveal())
         z.write(multiply(reducer_bits, reducer, mask, r_inverse, factor, converted, z.read(), mem_x.read(), n))
         end_if()
         mem_x.write(multiply(reducer_bits, reducer, mask, r_inverse, factor, converted, mem_x.read(), mem_x.read(), n))
         mem_y.write(mem_y.read() >> sint(1))
-        #print_ln("%s", z.read().reveal())
         return i
-    print_ln("Done with loop")
+    print_ln("Done with loop for spow")
     return z.read()
 
 
 
 def spow(a, b, n):
     # first compute r, r must be a power of 2, let r be 16 for now.
-    reducer_bits = sint(136) # (128 // 8 + 1) * 8, here our modulus is 128 bits as we are generating 128 bit primes???
+    reducer_bits = sint(72) # (128 // 8 + 1) * 8, here our modulus is 128 bits as we are generating 128 bit primes???
     reducer = sint(1) << reducer_bits
     mask = (reducer - sint(1)).reveal()
     r_inverse = inverse(smod(reducer, n), n)
@@ -196,7 +193,7 @@ def spow(a, b, n):
 # Check if a number is prime or not.
 def isPrime(n, num_bits):
     print_ln("%s %s", "Prime candidate", n.reveal())
-    lowPrimes =  [3,5,7,11,13,17] # ,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97]
+    lowPrimes =  [3,5,7,11,13,17,19,23,29,31,37,41,43,47,53] #,59,61,67,71,73,79,83,89,97]
     """
                    ,101,103,107,109,113,127,131,137,139,149,151,157,163,167,173,179
                    ,181,191,193,197,199,211,223,227,229,233,239,241,251,257,263,269
@@ -210,19 +207,19 @@ def isPrime(n, num_bits):
     """
     divides_low_primes = MemValue(sint(0))
     for i in range(len(lowPrimes)):
-        print_ln("%s %s", "Finding low primes iteration ", i)
+        print_ln("%s %s", "Checking if multiples of low primes iteration ", i)
         if_then((smod(n, sint(lowPrimes[i])) == sint(0)).reveal())
-	print_ln("%s", lowPrimes[i])
-        divides_low_primes.write(sint(1))
+	print_ln("%s %s", "Candidate is a multiple of ", lowPrimes[i])
+        divides_low_primes.write(sint(1)) 
         end_if()
 
-    is_prime = MemValue(sint(0))
+    is_prime = MemValue(sint(1))
     if_then((divides_low_primes.read() == sint(1)).reveal())
     print_ln("%s", "Is a multiple of a low prime")
     is_prime.write(sint(0))
     end_if()
-    
-    if_then(((n >= sint(3) and n % 2 != sint(0)) != sint(0)).reveal())
+    print_ln("%s %s", "Here we determine if we go to rabinMiller", (((n >=  sint(3)) and  (n % 2 != sint(0)) and (is_prime.read() == sint(1)))).reveal())    
+    if_then((((n >=  sint(3)) and  (n % 2 != sint(0)) and (is_prime.read() == sint(1)))).reveal())
     x = rabinMiller(n, num_bits)
     is_prime.write(x)
     end_if()
@@ -244,26 +241,27 @@ def rabinMiller(n, num_bits):
 
     k = MemValue(cint(0))
     print_ln("%s", "Finished first while loop of miller rabin")
-    @while_do(lambda i: (k.read() < cint(128)), regint(0))
+    @while_do(lambda i: (k.read() < cint(128) and is_prime.read() == sint(1)).reveal(), regint(0))
     def loop_body(i):
         ran = smod(sint.get_random_int(num_bits), n) 
         val = MemValue(spow(ran, mem_s.read(), n))
         if_then((val != sint(1)).reveal())
         index = MemValue(sint(0))
-        print_ln("%s", "About to hit inner loop of rabin miller")
-        @while_do(lambda j: (val != n - 1).reveal(), regint(0))
+        #print_ln("%s", "About to hit inner loop of rabin miller")
+        @while_do(lambda j: ((val != n - 1) and is_prime.read() == sint(1)).reveal(), regint(0))
         def f(j):
             if_then((index.read() == t.read() - 1).reveal())
+	    print_ln("%s %s", n.reveal(), " is not prime")
             is_prime.write(sint(0))
             else_then()
             index.write(index.read() + cint(1))
-            val.write(spow(val.read(), sint(2), n))
+            val.write(smod(val.read().square(), n))
             end_if()
             return j
         end_if()
         k.write(k.read() + 2)
         return i
-    print_ln("Where is the error")
+    print_ln("Should exit the loop")
     return is_prime.read()
 
 
@@ -271,24 +269,27 @@ def rabinMiller(n, num_bits):
 # Generate a prime of n bits
 def generate_prime(n):
     # testing mode, later change to 10 * n
-    num_iterations = 1
+    num_iterations = cint(80)
+    counter = MemValue(cint(0))
     prime = MemValue(sint(0))
-    @for_range(num_iterations)
+    @while_do(lambda i: ((counter.read() < num_iterations) and (prime.read() == sint(0))).reveal(), regint(0))
     def loop_body(i):
         random_num = sint.get_random_int(n)[0]
         if_then((isPrime(random_num, n) == sint(1)).reveal())
         prime.write(random_num)
         print_ln("%s %s", "Found a prime", random_num.reveal())
         end_if()
-    return prime
+	counter.write(counter.read() + cint(1))
+	return i
+    return prime.read()
 
 
 # Write public keys to files, write shares of private keys to files as well
 def main():
-    prime_length = 128
-    num_bits = 128
+    prime_length = 64
+    num_bits = 64
     prime = generate_prime(prime_length)
-    print_ln("%s", prime.reveal())
+    print_ln("%s %s", "PRIME:", prime.reveal())
 
 main()
 
