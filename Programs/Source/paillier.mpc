@@ -186,6 +186,7 @@ def spow(a, b, n):
     converted_a = convert_in(reducer_bits, a, n)
     #print_ln("%s %s %s %s %s %s", reducer_bits.reveal(), reducer.reveal(), mask.reveal(), r_inverse.reveal(), factor.reveal(), converted.reveal())
     result =  spow_helper(reducer_bits, reducer, mask, r_inverse, factor, converted, converted_a, b, n)
+    # Convert montgomery form to regular form and mod it by n.
     return convert_out(r_inverse, result, n)
 
 
@@ -193,7 +194,7 @@ def spow(a, b, n):
 # Check if a number is prime or not.
 def isPrime(n, num_bits):
     print_ln("%s %s", "Prime candidate", n.reveal())
-    lowPrimes =  [3,5,7,11,13,17,19,23,29,31,37,41,43,47,53] #,59,61,67,71,73,79,83,89,97]
+    lowPrimes =  [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53] #,59,61,67,71,73,79,83,89,97]
     """
                    ,101,103,107,109,113,127,131,137,139,149,151,157,163,167,173,179
                    ,181,191,193,197,199,211,223,227,229,233,239,241,251,257,263,269
@@ -235,10 +236,13 @@ def rabinMiller(n, num_bits):
     t = MemValue(sint(0))
     @while_do(lambda z: (mem_s.read() % 2 == sint(0)).reveal(), regint(0))
     def loop_body(i):
-        mem_s.write(mem_s.read() / sint(2))
+	print_ln("%s %s", "Hopefully s is even", mem_s.read().reveal())
+	mem_s.write(mem_s.read() >> sint(1))
         t.write(t.read() + sint(1))
 	return i
 
+    print_ln("%s %s", "t:", t.read().reveal())
+    print_ln("%s %s", "s:", mem_s.read().reveal())
     k = MemValue(cint(0))
     print_ln("%s", "Finished first while loop of miller rabin")
     @while_do(lambda i: (k.read() < cint(128) and is_prime.read() == sint(1)).reveal(), regint(0))
@@ -247,8 +251,10 @@ def rabinMiller(n, num_bits):
         val = MemValue(spow(ran, mem_s.read(), n))
         if_then((val != sint(1)).reveal())
         index = MemValue(sint(0))
-        #print_ln("%s", "About to hit inner loop of rabin miller")
-        @while_do(lambda j: ((val != n - 1) and is_prime.read() == sint(1)).reveal(), regint(0))
+	print_ln("%s %s %s", "val and n-1 comparison", val.read().reveal(), (n-sint(1)).reveal())
+	print_ln("%s",  ((val.read() != (n - sint(1))) and (is_prime.read() == sint(1))).reveal())
+	print_ln("%s %s", (val.read() == (n - sint(1))).reveal(), (val.read() != (n-sint(1))).reveal())
+        @while_do(lambda j: ((val.read() != (n - sint(1))) and is_prime.read() == sint(1)).reveal(), regint(0))
         def f(j):
             if_then((index.read() == t.read() - 1).reveal())
 	    print_ln("%s %s", n.reveal(), " is not prime")
@@ -256,6 +262,7 @@ def rabinMiller(n, num_bits):
             else_then()
             index.write(index.read() + cint(1))
             val.write(smod(val.read().square(), n))
+	    print_ln("%s %s", "v", val.read().reveal())
             end_if()
             return j
         end_if()
@@ -288,7 +295,10 @@ def generate_prime(n):
 def main():
     prime_length = 64
     num_bits = 64
-    prime = generate_prime(prime_length)
+    target = sint(9989579879485836067)
+    #prime = generate_prime(prime_length)
+    prime = isPrime(target, num_bits)
+    print_ln("%s %s", "Is the following number prime?", target.reveal())
     print_ln("%s %s", "PRIME:", prime.reveal())
 
 main()
