@@ -220,7 +220,7 @@ def isPrime(n, num_bits):
     is_prime.write(sint(0))
     end_if()
     print_ln("%s %s", "Here we determine if we go to rabinMiller", (((n >=  sint(3)) and  (n % 2 != sint(0)) and (is_prime.read() == sint(1)))).reveal())    
-    if_then((((n >=  sint(3)) and  (n % 2 != sint(0)) and (is_prime.read() == sint(1)))).reveal())
+    if_then((((n >=  sint(3)) +  (is_prime.read() == sint(1))) == sint(2)).reveal())
     x = rabinMiller(n, num_bits)
     is_prime.write(x)
     end_if()
@@ -245,16 +245,14 @@ def rabinMiller(n, num_bits):
     print_ln("%s %s", "s:", mem_s.read().reveal())
     k = MemValue(cint(0))
     print_ln("%s", "Finished first while loop of miller rabin")
-    @while_do(lambda i: (k.read() < cint(128) and is_prime.read() == sint(1)).reveal(), regint(0))
+    @while_do(lambda i: ((k.read() < cint(64)) + (is_prime.read() == sint(1)) == sint(2)).reveal(), regint(0))
     def loop_body(i):
+	print_ln("%s %s", "Rabin Millier Iteration", k.read())
         ran = smod(sint.get_random_int(num_bits), n) 
         val = MemValue(spow(ran, mem_s.read(), n))
         if_then((val != sint(1)).reveal())
         index = MemValue(sint(0))
-	print_ln("%s %s %s", "val and n-1 comparison", val.read().reveal(), (n-sint(1)).reveal())
-	print_ln("%s",  ((val.read() != (n - sint(1))) and (is_prime.read() == sint(1))).reveal())
-	print_ln("%s %s", (val.read() == (n - sint(1))).reveal(), (val.read() != (n-sint(1))).reveal())
-        @while_do(lambda j: ((val.read() != (n - sint(1))) and is_prime.read() == sint(1)).reveal(), regint(0))
+        @while_do(lambda j: ((val.read() != (n - sint(1))) + (is_prime.read() == sint(1)) == sint(2)).reveal(), regint(0))
         def f(j):
             if_then((index.read() == t.read() - 1).reveal())
 	    print_ln("%s %s", n.reveal(), " is not prime")
@@ -279,9 +277,9 @@ def generate_prime(n):
     num_iterations = cint(80)
     counter = MemValue(cint(0))
     prime = MemValue(sint(0))
-    @while_do(lambda i: ((counter.read() < num_iterations) and (prime.read() == sint(0))).reveal(), regint(0))
+    @while_do(lambda i: (((counter.read() < num_iterations) + (prime.read() == sint(0))) == sint(2)).reveal(), regint(0))
     def loop_body(i):
-        random_num = sint.get_random_int(n)[0]
+        random_num = sint.get_random_int(n)
         if_then((isPrime(random_num, n) == sint(1)).reveal())
         prime.write(random_num)
         print_ln("%s %s", "Found a prime", random_num.reveal())
@@ -295,10 +293,9 @@ def generate_prime(n):
 def main():
     prime_length = 64
     num_bits = 64
-    target = sint(9989579879485836067)
-    #prime = generate_prime(prime_length)
-    prime = isPrime(target, num_bits)
-    print_ln("%s %s", "Is the following number prime?", target.reveal())
+    #target = sint(9989579879485836067)
+    prime = generate_prime(prime_length)
+    #prime = isPrime(target, num_bits)
     print_ln("%s %s", "PRIME:", prime.reveal())
 
 main()
