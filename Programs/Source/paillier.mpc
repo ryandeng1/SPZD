@@ -19,22 +19,6 @@ def keygen(prime_length):
     return n, g, lam, mu
 
 
-def get_prime_pair(prime_length):
-	p = get_prime(prime_length)
-	q = MemValue(sint(0))
-        q.write(p)
-	@do_while
-	def loop_body():	
-		q.write(get_prime(prime_length))
-		print_ln("%s", "One iteration in which q = p")
-		print("here")	
-		print(type(q.read()))
-		print(type(q.read() == p))
-		return (q.read() == p).reveal() == 0
-	
-	return p, q.read()
-
-
 
 
 
@@ -84,7 +68,6 @@ def extended_euclidean_algorithm(a, b):
         temp3 = MemValue(t0.read())
         t0.write(t1)
         t1.write(temp3.read() - q * t1.read())
-        #print_ln("%s %s", "r1:", r1.read().reveal())
         return i
     return r0.read(), s0.read(), t0.read()
 
@@ -143,7 +126,6 @@ def convert_in(reducer_bits, x, n):
     return smod(x << reducer_bits, n) 
 
 def convert_out(r_inverse, x, n):
-    print_ln("%s", (r_inverse * x).reveal())
     return smod(r_inverse * x, n)
 
 
@@ -176,7 +158,7 @@ def spow_helper(reducer_bits, reducer, mask, r_inverse, factor, converted, x, y,
 
 def spow(a, b, n):
     # first compute r, r must be a power of 2, let r be 16 for now.
-    reducer_bits = sint(72) # (128 // 8 + 1) * 8, here our modulus is 128 bits as we are generating 128 bit primes???
+    reducer_bits = sint(24) # (128 // 8 + 1) * 8, here our modulus is 128 bits as we are generating 128 bit primes???
     reducer = sint(1) << reducer_bits
     mask = (reducer - sint(1)).reveal()
     r_inverse = inverse(smod(reducer, n), n)
@@ -184,7 +166,6 @@ def spow(a, b, n):
     #print_ln("%s", factor)
     converted = smod(reducer, n)
     converted_a = convert_in(reducer_bits, a, n)
-    #print_ln("%s %s %s %s %s %s", reducer_bits.reveal(), reducer.reveal(), mask.reveal(), r_inverse.reveal(), factor.reveal(), converted.reveal())
     result =  spow_helper(reducer_bits, reducer, mask, r_inverse, factor, converted, converted_a, b, n)
     # Convert montgomery form to regular form and mod it by n.
     return convert_out(r_inverse, result, n)
@@ -219,7 +200,6 @@ def isPrime(n, num_bits):
     print_ln("%s", "Is a multiple of a low prime")
     is_prime.write(sint(0))
     end_if()
-    print_ln("%s %s", "Here we determine if we go to rabinMiller", (((n >=  sint(3)) and  (n % 2 != sint(0)) and (is_prime.read() == sint(1)))).reveal())    
     if_then((((n >=  sint(3)) +  (is_prime.read() == sint(1))) == sint(2)).reveal())
     x = rabinMiller(n, num_bits)
     is_prime.write(x)
@@ -289,15 +269,34 @@ def generate_prime(n):
     return prime.read()
 
 
+def get_prime_pair(prime_length):
+	p = generate_prime(prime_length)
+	q = MemValue(sint(0))
+        q.write(p)
+	@while_do(lambda i: (q.read() == p).reveal(), regint(0))
+	def loop_body(i):	
+		q.write(generate_prime(prime_length))
+		print_ln("%s", "One iteration in which q = p")
+		return i
+	
+	return p, q.read()
+
+def generate_strong_prime(prime_length):
+    p = MemValue(sint(2))
+    @while_do(lambda i: ((isPrime(p.read(), prime_length) + isPrime(sint(2) * p.read() + sint(1), prime_length)) != sint(2)).reveal(), regint(0))
+    def loop_body(i):
+        print_ln("%s %s", p.read().reveal(), "is not a strong prime")
+	p.write(generate_prime(prime_length))
+	return i
+    return p.read()
+    
+
 # Write public keys to files, write shares of private keys to files as well
 def main():
     prime_length = 64
-    num_bits = 64
-    #target = sint(9989579879485836067)
-    prime = generate_prime(prime_length)
-    #prime = isPrime(target, num_bits)
-    print_ln("%s %s", "PRIME:", prime.reveal())
-
+    num_bits = 16
+    p = generate_strong_prime(prime_length)
+    print_ln("%s %s", "Strong prime", p.reveal())
 main()
 
 
