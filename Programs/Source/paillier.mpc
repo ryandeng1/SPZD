@@ -289,14 +289,37 @@ def generate_strong_prime(prime_length):
 	p.write(generate_prime(prime_length))
 	return i
     return p.read()
+
+# Generates a random multiplicative inverse in the field Z_n where n = (2p + 1)(2q+1)
+def generate_ran_inverse(p, q, length):
+    ran_p = smod(sint.get_random_int(length), p)
+    ran_q = smod(sint.get_random_int(length), q)
+    # Assume p != q here, 
+    q_inverse = inverse(q, p)
+    result = smod(q_inverse * (ran_p - ran_q), p) * q + ran_q
+    return result 
+
+    
+
+def paillier(prime_length):
+    p = generate_strong_prime(prime_length)
+    q = generate_strong_prime(prime_length)
+    n = (sint(2) * p + 1) * (sint(2) * q + 1)
+    m = p * q
+    # Need to pick elements randomly from multiplicative inverse of n. 
     
 
 # Write public keys to files, write shares of private keys to files as well
 def main():
     prime_length = 64
     num_bits = 16
-    p = generate_strong_prime(prime_length)
-    print_ln("%s %s", "Strong prime", p.reveal())
+    #p = generate_strong_prime(prime_length)
+    p = generate_prime(prime_length)
+    q = generate_prime(prime_length)
+    print_ln("%s %s %s %s", "p", p.reveal(), "q", q.reveal())
+    x = generate_ran_inverse(p, q, prime_length)
+    print_ln("%s %s", "Inverse", x.reveal())
+    #print_ln("%s %s", "Strong prime", p.reveal())
 main()
 
 
