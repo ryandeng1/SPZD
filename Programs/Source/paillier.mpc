@@ -6,7 +6,7 @@ from Compiler import library
 
 prime_length = 128
 PORTNUM = 14000
-program.set_bit_length(256)
+program.set_bit_length(64)
 
 
 # n and g are public keys for Paillier, lambda and mu are secret keys in Paillier.
@@ -300,6 +300,31 @@ def generate_ran_inverse(p, q, length):
     return result 
 
     
+# Creates a d-degree polynomial with secret s using Shamir secret sharing. Polynomial resides in the field modulo nm.
+def shamir(d, s, nm, num_bits):
+    coeff = [s]
+    @for_range(d)
+    def loop_body(i):
+	coeff.append(smod(sint.get_random_int(num_bits), nm))
+    
+    
+    # Shares 1 through d + 1, leave share 0 empty since polynomial evaluated at 0 would be the secret and that is no good. 
+    shares = Array(d + 1, sint)
+    @for_range(1, len(shares))
+    def loop_body(i):
+	shares[i] = eval_polynomial(i, coeff, nm)
+    return shares
+
+
+def eval_polynomial(val, coeff, nm):
+    result = MemValue(sint(0))
+    for i in range(len(coeff)):
+	result.write(result.read() + smod(coeff[i] * (val ** i), nm))
+    return result.read()    	
+    
+    
+
+
 
 def paillier(prime_length):
     p = generate_strong_prime(prime_length)
@@ -307,19 +332,31 @@ def paillier(prime_length):
     n = (sint(2) * p + 1) * (sint(2) * q + 1)
     m = p * q
     # Need to pick elements randomly from multiplicative inverse of n. 
+    beta = generate_ran_inverse(p, q, prime_length)
+    # Difference between choosing once from Z_n* x Z_n* versus twice from Z_n*
+    a, b = generate_ran_inverse(p, q, prime_length), generate_ran_inverse(p, q, prime_length)
+    # calculate g = (1+n)^a * b^n mod n^2
+    n_squared = n.square()
+    term_1 = spow((1 + n), a, n_squared)
+    term_2 = spow(b, n, n_squared)
+    g = smod(term_1 * term_2, n.squared)
+    secret_key = beta * m
     
+
 
 # Write public keys to files, write shares of private keys to files as well
 def main():
-    prime_length = 64
+    prime_length = 16
     num_bits = 16
     #p = generate_strong_prime(prime_length)
-    p = generate_prime(prime_length)
-    q = generate_prime(prime_length)
-    print_ln("%s %s %s %s", "p", p.reveal(), "q", q.reveal())
-    x = generate_ran_inverse(p, q, prime_length)
-    print_ln("%s %s", "Inverse", x.reveal())
+    #p = generate_prime(prime_length)
+    #q = generate_prime(prime_length)
+    #print_ln("%s %s %s %s", "p", p.reveal(), "q", q.reveal())
+    #x = generate_ran_inverse(p, q, prime_length)
+    #print_ln("%s %s", "Inverse", x.reveal())
     #print_ln("%s %s", "Strong prime", p.reveal())
+    shamir(2, sint(100), sint(997), prime_length)
+
 main()
 
 
