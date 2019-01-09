@@ -6,7 +6,7 @@ from Compiler import library
 
 prime_length = 128
 PORTNUM = 14000
-program.set_bit_length(64)
+program.set_bit_length(220)
 
 
 # n and g are public keys for Paillier, lambda and mu are secret keys in Paillier.
@@ -145,6 +145,7 @@ def spow_helper(reducer_bits, reducer, mask, r_inverse, factor, converted, x, y,
     mem_x = MemValue(x)
     @while_do(lambda i: (mem_y.read() != sint(0)).reveal(), regint(0))
     def loop_body(i):
+	print_ln("Hello")
         if_then((mem_y.read() % 2 != sint(0)).reveal())
         z.write(multiply(reducer_bits, reducer, mask, r_inverse, factor, converted, z.read(), mem_x.read(), n))
         end_if()
@@ -303,59 +304,77 @@ def generate_ran_inverse(p, q, length):
 # Creates a d-degree polynomial with secret s using Shamir secret sharing. Polynomial resides in the field modulo nm.
 def shamir(d, s, nm, num_bits):
     coeff = [s]
-    @for_range(d)
-    def loop_body(i):
+    for i in range(d):
+        print_ln("%s %s", "Length of coeff rn", len(coeff))
 	coeff.append(smod(sint.get_random_int(num_bits), nm))
-    
-    
+         
+    # coeff should have d + 1 entries
+    print_ln("%s %s", "How many coefficients", len(coeff))
+    print_ln("Coefficients")
+    for i in range(len(coeff)):
+	print_ln("%s", coeff[i].reveal())
+
     # Shares 1 through d + 1, leave share 0 empty since polynomial evaluated at 0 would be the secret and that is no good. 
-    shares = Array(d + 1, sint)
+    shares = Array(d + 2, sint)
     @for_range(1, len(shares))
     def loop_body(i):
 	shares[i] = eval_polynomial(i, coeff, nm)
     return shares
 
 
-def eval_polynomial(val, coeff, nm):
+def eval_polynomial(val, coeff, mod):
+    print_ln("Evaluating polynomial")
     result = MemValue(sint(0))
     for i in range(len(coeff)):
-	result.write(result.read() + smod(coeff[i] * (val ** i), nm))
+	result.write(smod(result.read() + coeff[i] * (val ** i), mod))
+        print_ln("%s %s", "coefficient", coeff[i].reveal())
     return result.read()    	
     
     
 
 
 
-def paillier(prime_length):
-    p = generate_strong_prime(prime_length)
-    q = generate_strong_prime(prime_length)
+def paillier(p, q, prime_length):
+    #p = generate_strong_prime(prime_length)
+    #q = generate_strong_prime(prime_length)
     n = (sint(2) * p + 1) * (sint(2) * q + 1)
     m = p * q
     # Need to pick elements randomly from multiplicative inverse of n. 
     beta = generate_ran_inverse(p, q, prime_length)
     # Difference between choosing once from Z_n* x Z_n* versus twice from Z_n*
     a, b = generate_ran_inverse(p, q, prime_length), generate_ran_inverse(p, q, prime_length)
+    print_ln("Finished generating all the inverses")
+    print_ln("%s %s %s", "Inverses", a.reveal(), b.reveal())
     # calculate g = (1+n)^a * b^n mod n^2
     n_squared = n.square()
     term_1 = spow((1 + n), a, n_squared)
+    print_ln("First spow finished")
     term_2 = spow(b, n, n_squared)
-    g = smod(term_1 * term_2, n.squared)
+    print_ln("Second spow finished")
+    g = smod(term_1 * term_2, n_squared)
+    theta = smod(a * beta * m, n)
     secret_key = beta * m
-    
+    return n, g, theta, secret_key
 
 
 # Write public keys to files, write shares of private keys to files as well
 def main():
     prime_length = 16
     num_bits = 16
-    #p = generate_strong_prime(prime_length)
-    #p = generate_prime(prime_length)
-    #q = generate_prime(prime_length)
-    #print_ln("%s %s %s %s", "p", p.reveal(), "q", q.reveal())
-    #x = generate_ran_inverse(p, q, prime_length)
-    #print_ln("%s %s", "Inverse", x.reveal())
+    p = sint(36761)#generate_strong_prime(prime_length)
+    q = sint(38039) #strong prime that is 16 bits
+    print_ln("%s %s %s", "Strong primes", p.reveal(), q.reveal())
+    x = generate_ran_inverse(p, q, prime_length)
+    print_ln("%s %s", "Inverse", x.reveal())
+    n, g, theta, secret_key = paillier(p, q, prime_length)
+    print_ln("%s %s %s %s %s %s %s %s", "n", n.reveal(), "g", g.reveal(), "theta", theta.reveal(), "sk", secret_key.reveal())
+
     #print_ln("%s %s", "Strong prime", p.reveal())
-    shamir(2, sint(100), sint(997), prime_length)
+    lst = shamir(2, sint(5), sint(997), 8)
+    print_ln("%s %s", "Len of shamir secrets", len(lst))
+    @for_range(len(lst))
+    def loop_body(i):
+	print_ln("%s %s %s", "Share ", i, lst[i].reveal())
 
 main()
 
