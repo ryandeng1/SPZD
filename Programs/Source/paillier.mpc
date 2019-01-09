@@ -6,7 +6,7 @@ from Compiler import library
 
 prime_length = 128
 PORTNUM = 14000
-program.set_bit_length(220)
+program.set_bit_length(384)
 
 
 # n and g are public keys for Paillier, lambda and mu are secret keys in Paillier.
@@ -82,6 +82,7 @@ def floor(a, b):
     def loop_body(i):
         mid.write((left + right) >> sint(1))
         if_then((a - mid.read() * b - b>= sint(0)).reveal())
+	print_ln("%s %s %s %s %s", "In floor", (a-mid.read() * b - b).reveal(), a.reveal(), b.reveal(), mid.read().reveal())
         left.write(mid.read() + sint(1))
         else_then()
         right.write(mid.read())
@@ -126,6 +127,7 @@ def convert_in(reducer_bits, x, n):
     return smod(x << reducer_bits, n) 
 
 def convert_out(r_inverse, x, n):
+    print_ln("%s %s %s %s", r_inverse.reveal(), x.reveal(), n.reveal(), "HAHAHA")
     return smod(r_inverse * x, n)
 
 
@@ -135,7 +137,6 @@ def multiply(reducer_bits, reducer, mask, r_inverse, factor, converted, x, y, n)
     reduced = (product + temp * n) >> reducer_bits
     cond = (reduced < n).reveal()
     result = cond.if_else(reduced, reduced - n)
-    print(type(result))
     return result
 
 
@@ -145,7 +146,7 @@ def spow_helper(reducer_bits, reducer, mask, r_inverse, factor, converted, x, y,
     mem_x = MemValue(x)
     @while_do(lambda i: (mem_y.read() != sint(0)).reveal(), regint(0))
     def loop_body(i):
-	print_ln("Hello")
+	print_ln("%s %s", "Hello", z.read().reveal())
         if_then((mem_y.read() % 2 != sint(0)).reveal())
         z.write(multiply(reducer_bits, reducer, mask, r_inverse, factor, converted, z.read(), mem_x.read(), n))
         end_if()
