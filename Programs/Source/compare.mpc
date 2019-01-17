@@ -1,0 +1,21 @@
+
+
+
+
+
+def compare(a, b):
+    return (a == b).reveal()
+
+
+
+def main():
+    length = 32
+    for i in range(1000):
+	a = sint.get_random_int(length)
+	b = sint.get_random_int(length)
+	c = compare(a, b)
+
+
+
+
+main()
