@@ -23,41 +23,42 @@ from Compiler.util import if_else
 
 PORTNUM = 14000
 MAX_NUM_CLIENTS = 2
-NUM_ROWS = 2
-NUM_COLS = 2
+NUM_ROWS = 10
+NUM_COLS = 10
 
 
 
 
-def multiply_matrices(left_matrix, right_matrix):
-  result_matrix = Array(NUM_ROWS * NUM_COLS, sint)
-  @for_range(NUM_ROWS * NUM_COLS)
+def multiply_matrices(left_matrix, right_matrix, rows, cols):
+  result_matrix = Array(rows * cols, sint)
+  @for_range(rows * cols)
   def range_body(i):
     result_matrix[i] = 0
-  @for_range(NUM_ROWS)
+  @for_range(rows)
   def range_body(i):
-    @for_range(NUM_COLS)
+    @for_range(rows)
     def range_body(j):
-      @for_range(NUM_COLS)
+      @for_range(cols)
       def range_body(k):
-        result_matrix[i * NUM_COLS + j] += left_matrix[i * NUM_COLS + k].reveal() * right_matrix[k * NUM_COLS + j].reveal()
+        result_matrix[i * cols + j] += left_matrix[i * cols + k].reveal() * right_matrix[k * cols + j].reveal()
   return result_matrix
   
 
-
-
-def main():
-    """Listen in while loop for players to join a game.
-    Once maxiumum reached or have notified that round finished, run comparison and return result."""
-    # Start listening for client socket connections
+def get_random_matrix(rows, cols):
     left = Array(NUM_ROWS * NUM_COLS, sint)
     right = Array(NUM_ROWS * NUM_COLS, sint)
     @for_range(len(left))
     def loop_body(i):
 	left[i] = sint.get_random_int(32)
 	right[i] = sint.get_random_int(32)
+    return left, right 
 
-    result = multiply_matrices(left, right)
+
+def main():
+    """Listen in while loop for players to join a game.
+    Once maxiumum reached or have notified that round finished, run comparison and return result."""
+    # Start listening for client socket connections
+    """
     print_ln("LEFT")
     @for_range(NUM_ROWS * NUM_COLS)
     def loop_body(i):
@@ -70,9 +71,16 @@ def main():
     @for_range(NUM_ROWS * NUM_COLS)
     def loop_body(i):
 	print_str("%s %s", result[i].reveal(), " ")
+    """
+    for i in range(10, 200, 10):
+	left, right = get_random_matrix(i, i)
+	print_ln("%s %s", "Dimension", i)
+	start_timer(i)
+	result = multiply_matrices(left, right, i, i)
+	stop_timer(i)
 
 
-
+    print_ln("HOT DAMN")
     
 
 
