@@ -23,8 +23,8 @@ from Compiler.util import if_else
 
 PORTNUM = 14000
 MAX_NUM_CLIENTS = 2
-NUM_ROWS = 10
-NUM_COLS = 10
+NUM_ROWS = 5
+NUM_COLS = 5
 
 
 
@@ -49,8 +49,8 @@ def get_random_matrix(rows, cols):
     right = Array(NUM_ROWS * NUM_COLS, sint)
     @for_range(len(left))
     def loop_body(i):
-	left[i] = sint.get_random_int(32)
-	right[i] = sint.get_random_int(32)
+	left[i] = sint.get_random_int(16)
+	right[i] = sint.get_random_int(16)
     return left, right 
 
 
@@ -72,12 +72,11 @@ def main():
     def loop_body(i):
 	print_str("%s %s", result[i].reveal(), " ")
     """
-    for i in range(10, 200, 10):
-	left, right = get_random_matrix(i, i)
-	print_ln("%s %s", "Dimension", i)
-	start_timer(i)
-	result = multiply_matrices(left, right, i, i)
-	stop_timer(i)
+    left, right = get_random_matrix(NUM_ROWS, NUM_COLS)
+    print_ln("%s %s", "Dimension", NUM_ROWS)
+    start_timer(1)
+    result = multiply_matrices(left, right, NUM_ROWS, NUM_COLS)
+    stop_timer(1)
 
 
     print_ln("HOT DAMN")
