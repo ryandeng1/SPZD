@@ -23,29 +23,10 @@ from Compiler.util import if_else
 
 PORTNUM = 14000
 MAX_NUM_CLIENTS = 2
-NUM_ROWS = 10
-NUM_COLS = 10
-
-def accept_client_input():
-    """
-    Wait for socket connection, send share of random value, receive input and deduce share.
-    Expect 3 inputs: unique id, bonus value and flag to indicate end of this round.
-    """
-    client_socket_id = regint()
-    
-    acceptclientconnection(client_socket_id, PORTNUM)
+NUM_ROWS = 2
+NUM_COLS = 2
 
 
-    print_ln("CLIENT RECEIVED")
-
-    client_inputs = sint.receive_from_client(1 + NUM_ROWS * NUM_COLS, client_socket_id)
-    finish = client_inputs[0].reveal()
-    matrix = Array(NUM_ROWS * NUM_COLS, sint)
-    for i in range(1, NUM_ROWS * NUM_COLS + 1):
-    	matrix[i - 1] = client_inputs[i]
-    
-    
-    return client_socket_id, matrix, finish
 
 
 def multiply_matrices(left_matrix, right_matrix):
@@ -64,79 +45,35 @@ def multiply_matrices(left_matrix, right_matrix):
   
 
 
-def write_matrix_to_clients(sockets, number_clients, matrix):
-  rnd_from_triple = sint.get_random_triple()[0]
-  @for_range(number_clients)
-  def loop_body(i):
-    @for_range(NUM_ROWS * NUM_COLS)
-    def loop_body(j):
-      auth_result = matrix[j] * rnd_from_triple
-      sint.write_shares_to_socket(sockets[i], [matrix[j], rnd_from_triple, auth_result])
-
-
-
 
 def main():
     """Listen in while loop for players to join a game.
     Once maxiumum reached or have notified that round finished, run comparison and return result."""
     # Start listening for client socket connections
-    listen(PORTNUM)
-    print_ln('Listening for client connections on base port %s', PORTNUM)
+    left = Array(NUM_ROWS * NUM_COLS, sint)
+    right = Array(NUM_ROWS * NUM_COLS, sint)
+    @for_range(len(left))
+    def loop_body(i):
+	left[i] = sint.get_random_int(32)
+	right[i] = sint.get_random_int(32)
 
-    @do_while
-    def game_loop():
-      print_ln('Starting one round of Matrix Multiplication')
-
-	    # Clients socket id (integer).
-      client_sockets = Array(MAX_NUM_CLIENTS, regint)
-	    # Number of clients
-      number_clients = MemValue(regint(0))
-
-
-	    # Client ids to identity client
-      client_ids = Array(MAX_NUM_CLIENTS, sint)
-
-
-	    #Make result an identity matrix
-      result = Array(NUM_ROWS * NUM_COLS, sint)
-      for i in range(NUM_ROWS):
-        result[i * NUM_COLS + i] = 1
-
-
-	    # Loop round waiting for each client to connect
+    result = multiply_matrices(left, right)
+    print_ln("LEFT")
+    @for_range(NUM_ROWS * NUM_COLS)
+    def loop_body(i):
+	print_str("%s %s", left[i].reveal(), " ")
+    print_ln("RIGHT")
+    @for_range(NUM_ROWS * NUM_COLS)
+    def loop_body(i):
+	print_str("%s %s", right[i].reveal(), " ")
+    print_ln("RESULT")
+    @for_range(NUM_ROWS * NUM_COLS)
+    def loop_body(i):
+	print_str("%s %s", result[i].reveal(), " ")
 
 
-      """
-      @do_while
-      def client_connections():
-        client_sockets[number_clients], matrix, finish = accept_client_input()
-        print_ln("Finish")
-        print_ln('%s', finish.reveal())
-        intermediate = multiply_matrices(result, matrix)
-        for i in range(NUM_ROWS * NUM_COLS):
-          result[i] = intermediate[i]
-        number_clients.write(number_clients+1)
-        print(number_clients)
-        return finish.reveal() == 0
-      """
-      @for_range(2)
-      def client_connections(i):
-        client_sockets[number_clients], matrix, finish = accept_client_input()
-        print_ln("Finish")
-        print_ln('%s', finish.reveal())
-        intermediate = multiply_matrices(result, matrix)
-        print_ln("Multipled the matrices")
-        for i in range(NUM_ROWS * NUM_COLS):
-          result[i] = intermediate[i]
-          print_ln('%s', result[i].reveal())
-        number_clients.write(number_clients+1)
-	    
 
-      for i in range(NUM_ROWS*NUM_COLS):
-        print(result[i])
-      write_matrix_to_clients(client_sockets, number_clients, result)
-      
-    return True
+    
 
 
 main()
